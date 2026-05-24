@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:Jaid/tomni.git"
+    "url": "git+https://github.com/Jaid/tomni.git"
   },
   "scripts": {
     "test": "bun test --max-concurrency 1"
