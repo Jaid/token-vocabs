@@ -3,6 +3,7 @@ import type {ModelId} from '../models.ts'
 import {Tokenizer} from '@huggingface/tokenizers'
 
 import {readModelMsgpackFile} from '../data.ts'
+import {toPlainObject} from '../structuredData.ts'
 import {BaseTokenizer} from './base/BaseTokenizer.ts'
 
 type HfEncodeResult = {
@@ -25,8 +26,8 @@ export class HuggingFaceTokenizer extends BaseTokenizer<TokenizerState> {
   }
 
   protected override createState() {
-    const tokenizerJson = readModelMsgpackFile<unknown>(this.modelId, 'tokenizer.msgpack')
-    const tokenizerConfig = readModelMsgpackFile<unknown>(this.modelId, 'tokenizer_config.msgpack')
+    const tokenizerJson = toPlainObject(readModelMsgpackFile<unknown>(this.modelId, 'tokenizer.msgpack'))
+    const tokenizerConfig = toPlainObject(readModelMsgpackFile<unknown>(this.modelId, 'tokenizer_config.msgpack'))
     return {
       tokenizer: new TokenizerConstructor(tokenizerJson, tokenizerConfig),
     }

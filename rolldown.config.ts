@@ -66,10 +66,7 @@ const createBrowserConfig = (): RolldownOptions => {
       ...config.output,
       entryFileNames: '[name].js',
       chunkFileNames: chunkInfo => {
-        if (chunkInfo.name.startsWith('vocabulary/')) {
-          return `${chunkInfo.name}.js`
-        }
-        return `chunk/${chunkInfo.name}.js`
+        return `${chunkInfo.name}.js`
       },
       codeSplitting: {
         groups: [vocabularyCodeSplittingGroup],
@@ -87,6 +84,6 @@ const createBrowserConfig = (): RolldownOptions => {
 }
 
 export default defineConfig([
-  createRuntimeConfig(),
+  // createRuntimeConfig(),
   createBrowserConfig(),
 ])

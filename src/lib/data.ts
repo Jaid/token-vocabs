@@ -1,10 +1,11 @@
+import type {ModelAssetFiles} from './modelAssets.ts'
 import type {ModelId} from './models.ts'
 
 import {Unpackr} from 'msgpackr/unpack'
 
+import {decodeBase64} from './modelAssets.ts'
 import {modelIds} from './models.ts'
 
-export type ModelAssetFiles = Record<string, string>
 export type ModelAssetMap = Partial<Record<ModelId, ModelAssetFiles>>
 
 type MsgpackUnpackr = {
@@ -18,13 +19,8 @@ const unpackr = new UnpackrConstructor({
 const textDecoder = new TextDecoder
 const modelAssetMap = Object.create(null) as ModelAssetMap
 const binaryCache = new Map<string, Uint8Array>
+const msgpackCache = new Map<string, unknown>
 const textCache = new Map<string, string>
-const decodeBase64 = (value: string) => {
-  if (typeof Uint8Array.fromBase64 === 'function') {
-    return Uint8Array.fromBase64(value)
-  }
-  return Uint8Array.from(atob(value), character => character.codePointAt(0)!)
-}
 const getModelFileKey = (modelId: ModelId, fileName: string) => {
   return `${modelId}/${fileName}`
 }
@@ -40,6 +36,11 @@ const clearModelCaches = (modelId: ModelId) => {
       textCache.delete(cacheKey)
     }
   }
+  for (const cacheKey of msgpackCache.keys()) {
+    if (cacheKey.startsWith(cacheKeyPrefix)) {
+      msgpackCache.delete(cacheKey)
+    }
+  }
 }
 const getModelFiles = (modelId: ModelId) => {
   const files = modelAssetMap[modelId]
@@ -49,11 +50,11 @@ const getModelFiles = (modelId: ModelId) => {
   return files
 }
 const getEncodedModelFile = (modelId: ModelId, fileName: string) => {
-  const base64 = getModelFiles(modelId)[fileName]
-  if (!base64) {
+  const file = getModelFiles(modelId)[fileName]
+  if (!file) {
     throw new Error(`Missing tokenizer asset ${JSON.stringify(fileName)} for model ${JSON.stringify(modelId)}. Run “bun run fetch” first.`)
   }
-  return base64
+  return file
 }
 const getModelFileBytes = (modelId: ModelId, fileName: string) => {
   const cacheKey = getModelFileKey(modelId, fileName)
@@ -61,30 +62,14 @@ const getModelFileBytes = (modelId: ModelId, fileName: string) => {
   if (cached) {
     return cached
   }
-  const decoded = decodeBase64(getEncodedModelFile(modelId, fileName))
+  const file = getEncodedModelFile(modelId, fileName)
+  if (file instanceof Uint8Array) {
+    binaryCache.set(cacheKey, file)
+    return file
+  }
+  const decoded = decodeBase64(file)
   binaryCache.set(cacheKey, decoded)
   return decoded
-}
-const toPlainObject = (value: unknown): unknown => {
-  if (Array.isArray(value)) {
-    return value.map(entry => toPlainObject(entry))
-  }
-  if (value instanceof Map) {
-    const object = {}
-    for (const [key, entryValue] of value.entries()) {
-      if (typeof key !== 'string') {
-        throw new TypeError(`Expected string MessagePack object key, got ${typeof key}.`)
-      }
-      Object.defineProperty(object, key, {
-        configurable: true,
-        enumerable: true,
-        value: toPlainObject(entryValue),
-        writable: true,
-      })
-    }
-    return object
-  }
-  return value
 }
 const toMsgpackFileName = (fileName: string) => {
   if (fileName.endsWith('.msgpack')) {
@@ -130,7 +115,15 @@ export const readModelTextFile = (modelId: ModelId, fileName: string) => {
 }
 
 export const readModelMsgpackFile = <T>(modelId: ModelId, fileName: string): T => {
-  return toPlainObject(unpackr.unpack(getModelFileBytes(modelId, toMsgpackFileName(fileName)))) as T
+  const normalizedFileName = toMsgpackFileName(fileName)
+  const cacheKey = getModelFileKey(modelId, normalizedFileName)
+  const cached = msgpackCache.get(cacheKey)
+  if (cached !== undefined) {
+    return cached as T
+  }
+  const unpacked = unpackr.unpack(getModelFileBytes(modelId, normalizedFileName)) as T
+  msgpackCache.set(cacheKey, unpacked)
+  return unpacked
 }
 
 export const getAvailableModelIds = () => {

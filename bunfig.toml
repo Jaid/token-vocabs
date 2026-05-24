@@ -1,4 +1,4 @@
 [test]
 root = "test"
 maxConcurrency = 1
-preload = ["./scripts/ensure-data.ts"]
+preload = ["./scripts/ensureData.ts"]

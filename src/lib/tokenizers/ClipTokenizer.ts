@@ -3,18 +3,12 @@ import type {ModelId} from '../models.ts'
 import {readModelMsgpackFile, readModelTextFile} from '../data.ts'
 import {BaseTokenizer} from './base/BaseTokenizer.ts'
 
-type ClipTokenizerConfig = {
-  bos_token?: {content: string} | string
-  eos_token?: {content: string} | string
-  unk_token?: {content: string} | string
-}
-
 type ClipTokenizerState = {
   byteEncoder: Array<string>
   mergeRanks: Map<string, number>
   specialTokenIds: Map<string, number>
   unknownTokenId: number
-  vocabulary: Partial<Record<string, number>>
+  vocabulary: Map<string, number>
 }
 
 const clipPattern = /<\|startoftext\|>|<\|endoftext\|>|'d|'ll|'m|'re|'s|'t|'ve|\p{L}+|\p{N}|[^\s\p{L}\p{N}]+/gu
@@ -23,6 +17,12 @@ const textEncoder = new TextEncoder
 const toTokenContent = (value: unknown) => {
   if (typeof value === 'string') {
     return value
+  }
+  if (value instanceof Map) {
+    const content = value.get('content') as unknown
+    if (typeof content === 'string') {
+      return content
+    }
   }
   if (value && typeof value === 'object' && 'content' in value && typeof value.content === 'string') {
     return value.content
@@ -68,20 +68,20 @@ export class ClipTokenizer extends BaseTokenizer<ClipTokenizerState> {
   }
 
   protected override createState() {
-    const vocabulary = readModelMsgpackFile<Partial<Record<string, number>>>(this.modelId, 'vocab.msgpack')
-    const tokenizerConfig = readModelMsgpackFile<ClipTokenizerConfig>(this.modelId, 'tokenizer_config.msgpack')
+    const vocabulary = readModelMsgpackFile<Map<string, number>>(this.modelId, 'vocab.msgpack')
+    const tokenizerConfig = readModelMsgpackFile<Map<string, unknown>>(this.modelId, 'tokenizer_config.msgpack')
     const specialTokenIds = new Map<string, number>
-    const unknownTokenContent = toTokenContent(tokenizerConfig.unk_token) ?? '<|endoftext|>'
-    const unknownTokenId = vocabulary[unknownTokenContent]
+    const unknownTokenContent = toTokenContent(tokenizerConfig.get('unk_token')) ?? '<|endoftext|>'
+    const unknownTokenId = vocabulary.get(unknownTokenContent)
     if (unknownTokenId === undefined) {
       throw new Error(`Could not find CLIP unknown token ${JSON.stringify(unknownTokenContent)} in ${JSON.stringify(this.modelId)} vocabulary.`)
     }
-    for (const value of [tokenizerConfig.bos_token, tokenizerConfig.eos_token, tokenizerConfig.unk_token]) {
+    for (const value of [tokenizerConfig.get('bos_token'), tokenizerConfig.get('eos_token'), tokenizerConfig.get('unk_token')]) {
       const content = toTokenContent(value)
       if (!content) {
         continue
       }
-      const tokenId = vocabulary[content]
+      const tokenId = vocabulary.get(content)
       if (tokenId !== undefined) {
         specialTokenIds.set(content, tokenId)
       }
@@ -110,7 +110,7 @@ export class ClipTokenizer extends BaseTokenizer<ClipTokenizerState> {
       }
       const encodedPiece = Array.from(textEncoder.encode(piece), byte => state.byteEncoder[byte]).join('')
       for (const token of this.#applyBpe(encodedPiece, state.mergeRanks)) {
-        ids.push(state.vocabulary[token] ?? state.unknownTokenId)
+        ids.push(state.vocabulary.get(token) ?? state.unknownTokenId)
       }
     }
     return ids

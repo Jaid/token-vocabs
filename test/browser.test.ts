@@ -51,3 +51,33 @@ test('browser entry lazily loads selected vocabularies', async () => {
     tokenIds: [77_021, 18_778, 4724],
   })
 }, 30_000)
+test('browser/all eagerly loads every vocabulary', async () => {
+  const script = [
+    'import countTokens, {getLoadedModelIds, tokenize} from \"tomni/browser/all\"',
+    'console.log(JSON.stringify({',
+    '  counts: countTokens(\'mind goblin\', {model: [\'gpt\', \'deepseek\']}),',
+    '  loadedModelIds: getLoadedModelIds(),',
+    '  tokenIds: tokenize(\'mind goblin\', \'sdxl\'),',
+    '}))',
+  ].join('\n')
+  const browserProcess = Bun.spawn(['bun', '--eval', script], {
+    cwd: rootFolder,
+    stderr: 'pipe',
+    stdout: 'pipe',
+  })
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(browserProcess.stdout).text(),
+    new Response(browserProcess.stderr).text(),
+    browserProcess.exited,
+  ])
+  expect(exitCode).toBe(0)
+  expect(stderr).toBe('')
+  expect(JSON.parse(stdout)).toEqual({
+    counts: {
+      deepseek: 4,
+      gpt: 3,
+    },
+    loadedModelIds: ['gpt', 'gemma', 'qwen', 'kimi', 'deepseek', 'mimo', 'sdxl', 'glm', 'minimax'],
+    tokenIds: [2575, 26_223],
+  })
+}, 30_000)

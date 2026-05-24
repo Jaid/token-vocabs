@@ -1,16 +1,17 @@
-import type {ModelAssetFiles} from '../lib/data.ts'
-import type {ModelSelection} from '../lib/model-selection.ts'
+import type {EncodedModelAssetFiles} from '../lib/modelAssets.ts'
 import type {ModelId} from '../lib/models.ts'
+import type {ModelSelection} from '../lib/modelSelection.ts'
 
 import {getAvailableModelIds, hasModelAssets, registerModelAssets} from '../lib/data.ts'
-import {normalizeModelList} from '../lib/model-selection.ts'
+import {prepareEncodedModelAssets} from '../lib/modelAssets.ts'
+import {normalizeModelList} from '../lib/modelSelection.ts'
 
 export {countTokens, default, modelIds, models, tokenize} from '../lib/api.ts'
 export type {CountTokensOptions, CountTokensResult, ModelSelection, TokenizeResult} from '../lib/api.ts'
 export type {ModelId}
 
 type ModelAssetModule = {
-  default: ModelAssetFiles
+  default: EncodedModelAssetFiles
 }
 
 const modelAssetLoaders = {
@@ -38,7 +39,7 @@ export const loadModel = async (modelId: ModelId) => {
     return modelId
   }
   const loadedModule = await modelAssetLoaders[modelId]()
-  registerModelAssets(modelId, loadedModule.default)
+  registerModelAssets(modelId, await prepareEncodedModelAssets(loadedModule.default))
   return modelId
 }
 

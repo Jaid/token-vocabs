@@ -19,7 +19,7 @@ Count tokens or inspect token IDs across several modern tokenizer families from 
 - offline at runtime once the vendored assets are present
 - browser-friendly once bundled
 - exact golden outputs for the core sample fixture
-- MessagePack-compressed structured tokenizer assets
+- Brotli-compressed MessagePack tokenizer assets with Map-backed structured loading
 - Rolldown browser builds that can lazy-load one chunk per vocabulary, plus an eager `all.js` variant and the required WASM asset
 - sync API for convenience
 - one shared interface for count-oriented and token-ID-oriented usage
@@ -162,4 +162,5 @@ console.dir(countTokens('mind goblin', {model: ['gpt', 'deepseek']}))
 
 - `sdxl` intentionally implements the shared CLIP BPE core used by SDXL without auto-adding BOS/EOS tokens.
 - GPT uses `tiktoken`’s built-in `o200k_base` implementation, but the upstream encoder payload is still fetched and converted to MessagePack for completeness.
+- Structured tokenizer payloads are emitted into generated modules as base64-encoded `.msgpack.br` blobs and decompressed before use.
 - Tokenizer assets are large. That is inherent to exact offline tokenization.
