@@ -2,11 +2,11 @@ import type {ModelId} from './models.ts'
 
 import {Unpackr} from 'msgpackr/unpack'
 
-import {modelAssets} from '#root/temp/generated/model-assets/index.ts'
-
 import {modelIds} from './models.ts'
 
-type ModelAssetMap = Partial<Record<ModelId, Record<string, string>>>
+export type ModelAssetFiles = Record<string, string>
+export type ModelAssetMap = Partial<Record<ModelId, ModelAssetFiles>>
+
 type MsgpackUnpackr = {
   unpack: (value: Uint8Array) => unknown
 }
@@ -16,7 +16,7 @@ const unpackr = new UnpackrConstructor({
   mapsAsObjects: false,
 })
 const textDecoder = new TextDecoder
-const modelAssetMap = modelAssets as ModelAssetMap
+const modelAssetMap = Object.create(null) as ModelAssetMap
 const binaryCache = new Map<string, Uint8Array>
 const textCache = new Map<string, string>
 const decodeBase64 = (value: string) => {
@@ -28,10 +28,23 @@ const decodeBase64 = (value: string) => {
 const getModelFileKey = (modelId: ModelId, fileName: string) => {
   return `${modelId}/${fileName}`
 }
+const clearModelCaches = (modelId: ModelId) => {
+  const cacheKeyPrefix = `${modelId}/`
+  for (const cacheKey of binaryCache.keys()) {
+    if (cacheKey.startsWith(cacheKeyPrefix)) {
+      binaryCache.delete(cacheKey)
+    }
+  }
+  for (const cacheKey of textCache.keys()) {
+    if (cacheKey.startsWith(cacheKeyPrefix)) {
+      textCache.delete(cacheKey)
+    }
+  }
+}
 const getModelFiles = (modelId: ModelId) => {
   const files = modelAssetMap[modelId]
   if (!files) {
-    throw new Error(`Missing tokenizer assets for model ${JSON.stringify(modelId)}. Run “bun run fetch” first.`)
+    throw new Error(`Missing tokenizer assets for model ${JSON.stringify(modelId)}. Run “bun run fetch” first or load the vocabulary chunk before tokenizing.`)
   }
   return files
 }
@@ -83,6 +96,25 @@ const toMsgpackFileName = (fileName: string) => {
   throw new TypeError(`Expected a MessagePack or JSON file name, got ${JSON.stringify(fileName)}.`)
 }
 
+export const hasModelAssets = (modelId: ModelId) => {
+  return Object.hasOwn(modelAssetMap, modelId)
+}
+
+export const registerModelAssets = (modelId: ModelId, files: ModelAssetFiles) => {
+  modelAssetMap[modelId] = files
+  clearModelCaches(modelId)
+}
+
+export const registerModelAssetMap = (assets: ModelAssetMap) => {
+  for (const modelId of modelIds) {
+    const files = assets[modelId]
+    if (!files) {
+      continue
+    }
+    registerModelAssets(modelId, files)
+  }
+}
+
 export const readModelTextFile = (modelId: ModelId, fileName: string) => {
   if (fileName.endsWith('.json') || fileName.endsWith('.msgpack')) {
     throw new TypeError(`Cannot read structured tokenizer asset ${JSON.stringify(fileName)} as text.`)
@@ -102,5 +134,5 @@ export const readModelMsgpackFile = <T>(modelId: ModelId, fileName: string): T =
 }
 
 export const getAvailableModelIds = () => {
-  return modelIds.filter(modelId => Object.hasOwn(modelAssetMap, modelId))
+  return modelIds.filter(modelId => hasModelAssets(modelId))
 }

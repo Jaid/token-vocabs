@@ -20,6 +20,7 @@ Count tokens or inspect token IDs across several modern tokenizer families from 
 - browser-friendly once bundled
 - exact golden outputs for the core sample fixture
 - MessagePack-compressed structured tokenizer assets
+- Rolldown browser builds that can lazy-load one chunk per vocabulary, plus an eager `all.js` variant and the required WASM asset
 - sync API for convenience
 - one shared interface for count-oriented and token-ID-oriented usage
 - generated tokenizer assets via `bun run fetch`
@@ -108,6 +109,21 @@ Exports the supported model IDs in stable default order.
 
 Exports model metadata, including the original upstream source URLs used by `bun run fetch`.
 
+### `tomni/browser`
+
+Lazy browser entry with the same `countTokens()` and `tokenize()` API, plus:
+
+- `loadModel(modelId)`
+- `loadModels(modelSelection?)`
+- `isModelLoaded(modelId)`
+- `getLoadedModelIds()`
+
+Load the required vocabularies first, then call the sync tokenization API.
+
+### `tomni/browser/all`
+
+Eager browser entry that preloads every vocabulary and keeps the original “load once, tokenize immediately” behavior.
+
 ## Asset workflow
 
 Raw fetched tokenizer assets are written to `./temp/data`.
@@ -129,7 +145,18 @@ bun run build
 That produces a `dist/` folder containing:
 
 - `dist/main.js` for Bun/runtime usage
-- `dist/browser/main.js` plus emitted WASM assets for browser bundlers
+- `dist/browser/main.js` as the lazy browser entry – call `loadModels()` before tokenizing
+- `dist/browser/all.js` as the eager browser entry that preloads every vocabulary
+- emitted chunk files under `dist/browser/vocabulary/` plus the required WASM asset for browser bundlers
+
+Example lazy browser usage:
+
+```ts
+import {countTokens, loadModels} from './dist/browser/main.js'
+
+await loadModels(['gpt', 'deepseek'])
+console.dir(countTokens('mind goblin', {model: ['gpt', 'deepseek']}))
+```
 
 ## Notes
 

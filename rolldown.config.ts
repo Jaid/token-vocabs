@@ -1,0 +1,92 @@
+import type {CodeSplittingGroup, OutputOptions, RolldownOptions} from 'rolldown'
+
+import path from 'node:path'
+
+import {defineConfig} from 'rolldown'
+import {wasm} from 'rolldown-plugin-wasm'
+
+import {modelIds} from './src/lib/models.ts'
+
+const rootFolder = import.meta.dirname
+const distFolder = path.join(rootFolder, 'dist')
+const browserDistFolder = path.join(distFolder, 'browser')
+const runtimeEntryFile = path.join(rootFolder, 'src/main.ts')
+const browserEntryFiles = {
+  all: path.join(rootFolder, 'src/browser/all.ts'),
+  main: path.join(rootFolder, 'src/browser/main.ts'),
+} as const
+const browserVocabularyPattern = new RegExp(String.raw`/src/browser/vocabulary/(?<modelId>${modelIds.join('|')})\.ts$`, 'u')
+const normalizeModuleId = (moduleId: string) => {
+  return moduleId.replaceAll('\\', '/')
+}
+const toVocabularyChunkName = (moduleId: string) => {
+  const match = browserVocabularyPattern.exec(normalizeModuleId(moduleId))
+  if (!match?.groups?.modelId) {
+    return null
+  }
+  return `vocabulary/${match.groups.modelId}`
+}
+const vocabularyCodeSplittingGroup: CodeSplittingGroup = {
+  minSize: 1,
+  name: toVocabularyChunkName,
+  priority: 100,
+}
+const createBaseOutput = (): OutputOptions => {
+  return {
+    assetFileNames: '[name][extname]',
+    cleanDir: false,
+    format: 'es',
+    minify: true,
+  }
+}
+const createBaseConfig = (): Omit<RolldownOptions, 'output'> & {output: OutputOptions} => {
+  return {
+    output: createBaseOutput(),
+  }
+}
+const createRuntimeConfig = (): RolldownOptions => {
+  const config = createBaseConfig()
+  return {
+    ...config,
+    input: runtimeEntryFile,
+    output: {
+      ...config.output,
+      dir: distFolder,
+      entryFileNames: 'main.js',
+    },
+    platform: 'node',
+  }
+}
+const createBrowserConfig = (): RolldownOptions => {
+  const config = createBaseConfig()
+  return {
+    ...config,
+    input: browserEntryFiles,
+    output: {
+      ...config.output,
+      entryFileNames: '[name].js',
+      chunkFileNames: chunkInfo => {
+        if (chunkInfo.name.startsWith('vocabulary/')) {
+          return `${chunkInfo.name}.js`
+        }
+        return `chunk/${chunkInfo.name}.js`
+      },
+      codeSplitting: {
+        groups: [vocabularyCodeSplittingGroup],
+      },
+      dir: browserDistFolder,
+    },
+    platform: 'browser',
+    plugins: [
+      wasm({
+        fileName: '[name][extname]',
+        targetEnv: 'browser',
+      }),
+    ],
+  }
+}
+
+export default defineConfig([
+  createRuntimeConfig(),
+  createBrowserConfig(),
+])
