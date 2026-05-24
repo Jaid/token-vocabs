@@ -28,8 +28,8 @@ const toTokenContent = (value: unknown) => {
     return value.content
   }
 }
-const createByteEncoder = () => {
-  const byteEncoder = Array.from({length: 256})
+const createByteEncoder = (): Array<string> => {
+  const byteEncoder = Array.from({length: 256}, () => '')
   const bytes = [
     ...Array.from({length: 94}, (_, index) => index + 33),
     ...Array.from({length: 12}, (_, index) => index + 161),

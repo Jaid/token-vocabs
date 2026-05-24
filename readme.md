@@ -20,6 +20,7 @@ Count tokens or inspect token IDs across several modern tokenizer families from 
 - browser-friendly once bundled
 - exact golden outputs for the core sample fixture
 - Brotli-compressed MessagePack tokenizer assets with Map-backed structured loading
+- browser Brotli decompression with a bundled JS fallback where native stream support is missing
 - Rolldown browser builds that can lazy-load one chunk per vocabulary, plus an eager `all.js` variant and the required WASM asset
 - sync API for convenience
 - one shared interface for count-oriented and token-ID-oriented usage

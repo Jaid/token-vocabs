@@ -4,7 +4,8 @@ import path from 'node:path'
 const rootFolder = path.resolve(import.meta.dirname, '..')
 test('browser entry lazily loads selected vocabularies', async () => {
   const script = [
-    'import {countTokens, getLoadedModelIds, isModelLoaded, loadModels, tokenize} from \'tomni/browser\'',
+    'globalThis.DecompressionStream = undefined',
+    'const {countTokens, getLoadedModelIds, isModelLoaded, loadModels, tokenize} = await import(\'tomni/browser\')',
     'const sampleText = \'mind goblin\'',
     'let missingAssetError = \'\'',
     'try {',
@@ -53,7 +54,8 @@ test('browser entry lazily loads selected vocabularies', async () => {
 }, 30_000)
 test('browser/all eagerly loads every vocabulary', async () => {
   const script = [
-    'import countTokens, {getLoadedModelIds, tokenize} from \"tomni/browser/all\"',
+    'globalThis.DecompressionStream = undefined',
+    'const {default: countTokens, getLoadedModelIds, tokenize} = await import("tomni/browser/all")',
     'console.log(JSON.stringify({',
     '  counts: countTokens(\'mind goblin\', {model: [\'gpt\', \'deepseek\']}),',
     '  loadedModelIds: getLoadedModelIds(),',
