@@ -1,1 +1,135 @@
 # tomni
+
+Count tokens or inspect token IDs across several modern tokenizer families from one local, offline-friendly package.
+
+## Supported models
+
+- GPT → `o200k_base`
+- Gemma 4 31B it
+- Qwen 3.6 27B
+- Kimi K2.6
+- DeepSeek V4 Pro
+- MiMo V2.5 Pro
+- Stable Diffusion XL
+- GLM 5.1
+- MiniMax M2.7
+
+## Highlights
+
+- offline at runtime once the vendored assets are present
+- exact golden outputs for the core sample fixture
+- sync API for convenience
+- one shared interface for count-oriented and token-ID-oriented usage
+- vendored tokenizer data via `bun run fetch`
+- portable `dist/` builds that include `data/` and `tiktoken_bg.wasm`
+
+## Usage
+
+```ts
+import countTokens from 'tomni'
+
+console.dir(countTokens('mind goblin'))
+```
+
+```ts
+import countTokens from 'tomni'
+
+console.dir(countTokens('mind goblin', {model: ['gpt', 'deepseek']}))
+```
+
+```ts
+import countTokens from 'tomni'
+
+console.dir(countTokens('mind goblin', 'gpt'))
+```
+
+```ts
+import {tokenize} from 'tomni'
+
+console.dir(tokenize('mind goblin'))
+```
+
+## Example output
+
+```ts
+countTokens('mind goblin')
+// {
+//   gpt: 3,
+//   gemma: 2,
+//   qwen: 3,
+//   kimi: 4,
+//   deepseek: 4,
+//   mimo: 3,
+//   sdxl: 2,
+//   glm: 3,
+//   minimax: 3,
+// }
+```
+
+```ts
+tokenize('mind goblin')
+// {
+//   gpt: [77021, 18778, 4724],
+//   gemma: [24447, 218798],
+//   qwen: [36475, 338, 45491],
+//   kimi: [66468, 970, 3145, 259],
+//   deepseek: [60514, 807, 3778, 261],
+//   mimo: [37724, 342, 47061],
+//   sdxl: [2575, 26223],
+//   glm: [37528, 342, 46771],
+//   minimax: [68201, 113859, 259],
+// }
+```
+
+## API
+
+### `countTokens(text, options?)`
+
+Returns token counts.
+
+```ts
+countTokens('mind goblin')
+countTokens('mind goblin', 'sdxl')
+countTokens('mind goblin', {model: 'gpt'})
+countTokens('mind goblin', {model: ['gpt', 'deepseek']})
+```
+
+### `tokenize(text, options?)`
+
+Returns token ID arrays with the same selection rules as `countTokens()`.
+
+### `modelIds`
+
+Exports the supported model IDs in stable default order.
+
+### `models`
+
+Exports model metadata, including the original upstream source URLs used by `bun run fetch`.
+
+## Asset workflow
+
+The repository keeps tokenizer assets in `./data`.
+
+Refresh them with:
+
+```sh
+bun run fetch
+```
+
+Create a portable runtime bundle with:
+
+```sh
+bun run build
+```
+
+That produces a `dist/` folder containing:
+
+- bundled JavaScript
+- vendored tokenizer data under `dist/data`
+- `dist/tiktoken_bg.wasm`
+
+## Notes
+
+- `sdxl` intentionally implements the shared CLIP BPE core used by SDXL without auto-adding BOS/EOS tokens.
+- GPT uses `tiktoken`’s built-in `o200k_base` implementation, but the raw upstream JSON is still fetched and kept in the repository for completeness.
+- Tokenizer assets are large. That is inherent to exact offline tokenization.
