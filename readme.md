@@ -1,4 +1,4 @@
-# tomni
+# token-vocabs
 
 Count tokens or inspect token IDs across several modern tokenizer families from one local, offline-friendly package.
 
@@ -30,25 +30,25 @@ Count tokens or inspect token IDs across several modern tokenizer families from 
 ## Usage
 
 ```ts
-import countTokens from 'tomni'
+import countTokens from 'token-vocabs'
 
 console.dir(countTokens('mind goblin'))
 ```
 
 ```ts
-import countTokens from 'tomni'
+import countTokens from 'token-vocabs'
 
 console.dir(countTokens('mind goblin', {model: ['gpt', 'deepseek']}))
 ```
 
 ```ts
-import countTokens from 'tomni'
+import countTokens from 'token-vocabs'
 
 console.dir(countTokens('mind goblin', 'gpt'))
 ```
 
 ```ts
-import {tokenize} from 'tomni'
+import {tokenize} from 'token-vocabs'
 
 console.dir(tokenize('mind goblin'))
 ```
@@ -110,7 +110,7 @@ Exports the supported model IDs in stable default order.
 
 Exports model metadata, including the original upstream source URLs used by `bun run fetch`.
 
-### `tomni/browser`
+### `token-vocabs/browser`
 
 Lazy browser entry with the same `countTokens()` and `tokenize()` API, plus:
 
@@ -121,7 +121,7 @@ Lazy browser entry with the same `countTokens()` and `tokenize()` API, plus:
 
 Load the required vocabularies first, then call the sync tokenization API.
 
-### `tomni/browser/all`
+### `token-vocabs/browser/all`
 
 Eager browser entry that preloads every vocabulary and keeps the original “load once, tokenize immediately” behavior.
 
