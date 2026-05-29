@@ -10,11 +10,22 @@ export abstract class BaseTokenizer<TState> {
 
   protected abstract createState(): TState
 
+  protected disposeState(_state: TState) {}
+
   encode(input: TokenizeInput) {
     return this.encodeWithState(toTokenizeText(input), this.getState())
   }
 
   protected abstract encodeWithState(text: string, state: TState): Array<number>
+
+  free() {
+    if (!this.#isLoaded) {
+      return
+    }
+    this.disposeState(this.#state as TState)
+    this.#state = undefined
+    this.#isLoaded = false
+  }
 
   protected getState() {
     if (!this.#isLoaded) {

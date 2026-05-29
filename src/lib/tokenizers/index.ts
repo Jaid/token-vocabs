@@ -8,6 +8,7 @@ import {BuiltinTiktokenTokenizer, CustomTiktokenTokenizer} from './TiktokenToken
 
 type TokenizerLike = {
   encode: (input: TokenizeInput) => Array<number>
+  free: () => void
   getTokenCount: (input: TokenizeInput) => number
   tokenize: (input: TokenizeInput) => RawTokenizeResult
 }
@@ -41,4 +42,17 @@ export const getTokenizer = (modelId: ModelId) => {
   }
   tokenizerCache.set(modelId, tokenizer)
   return tokenizer
+}
+
+export const freeTokenizers = (modelId?: ModelId) => {
+  if (modelId) {
+    const tokenizer = tokenizerCache.get(modelId)
+    tokenizer?.free()
+    tokenizerCache.delete(modelId)
+    return
+  }
+  for (const tokenizer of tokenizerCache.values()) {
+    tokenizer.free()
+  }
+  tokenizerCache.clear()
 }

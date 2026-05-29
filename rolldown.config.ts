@@ -1,11 +1,9 @@
-import type {CodeSplittingGroup, OutputOptions, RolldownOptions} from 'rolldown'
+import type {OutputOptions, RolldownOptions} from 'rolldown'
 
 import path from 'node:path'
 
 import {defineConfig} from 'rolldown'
 import {wasm} from 'rolldown-plugin-wasm'
-
-import {modelIds} from './src/lib/models.ts'
 
 const rootFolder = import.meta.dirname
 const distFolder = path.join(rootFolder, 'dist')
@@ -14,22 +12,6 @@ const browserEntryFiles = {
   main: path.join(rootFolder, 'src/browser/main.ts'),
 } as const
 const sharedChunkFolderName = 'chunks'
-const browserVocabularyPattern = new RegExp(String.raw`/src/browser/vocabulary/(?<modelId>${modelIds.join('|')})\.ts$`, 'u')
-const normalizeModuleId = (moduleId: string) => {
-  return moduleId.replaceAll('\\', '/')
-}
-const toVocabularyChunkName = (moduleId: string) => {
-  const match = browserVocabularyPattern.exec(normalizeModuleId(moduleId))
-  if (!match?.groups?.modelId) {
-    return null
-  }
-  return `vocabulary/${match.groups.modelId}`
-}
-const vocabularyCodeSplittingGroup: CodeSplittingGroup = {
-  minSize: 1,
-  name: toVocabularyChunkName,
-  priority: 100,
-}
 const createBaseOutput = (): OutputOptions => {
   return {
     assetFileNames: '[name][extname]',
@@ -47,19 +29,14 @@ const createBrowserConfig = (): RolldownOptions => {
   const config = createBaseConfig()
   return {
     ...config,
+    experimental: {
+      resolveNewUrlToAsset: true,
+    },
     input: browserEntryFiles,
     output: {
       ...config.output,
       entryFileNames: '[name].js',
-      chunkFileNames: chunkInfo => {
-        if (!chunkInfo.name.startsWith('vocabulary/')) {
-          return `${sharedChunkFolderName}/${chunkInfo.name}.js`
-        }
-        return `${chunkInfo.name}.js`
-      },
-      codeSplitting: {
-        groups: [vocabularyCodeSplittingGroup],
-      },
+      chunkFileNames: `${sharedChunkFolderName}/[name].js`,
       dir: distFolder,
     },
     platform: 'browser',

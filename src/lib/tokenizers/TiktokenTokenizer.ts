@@ -9,6 +9,10 @@ import {toRawTokenizeResultFromTokenByteLengths} from '../tokenization.ts'
 import {BaseTokenizer} from './base/BaseTokenizer.ts'
 
 abstract class BaseTiktokenTokenizer extends BaseTokenizer<Tiktoken> {
+  protected override disposeState(state: Tiktoken) {
+    state.free()
+  }
+
   protected override tokenizeWithState(text: string, state: Tiktoken) {
     const tokenIds = this.encodeWithState(text, state)
     return toRawTokenizeResultFromTokenByteLengths(tokenIds, tokenIds.map(tokenId => state.decode_single_token_bytes(tokenId).length))

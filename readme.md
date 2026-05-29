@@ -19,43 +19,44 @@ Count tokens or inspect token IDs across several modern tokenizer families from 
 - offline at runtime once the vendored assets are present
 - browser-friendly once bundled
 - exact golden outputs for the core sample fixture
-- Brotli-compressed MessagePack tokenizer assets with Map-backed structured loading
+- one Brotli-compressed MessagePack asset bundle per model
 - browser Brotli decompression with a bundled JS fallback where native stream support is missing
-- Rolldown browser builds that can lazy-load one chunk per vocabulary, plus an eager `all.js` variant and the required WASM asset
-- sync API for convenience
+- Rolldown browser builds that emit binary `.msgpack.br` vocabulary bundles, shared chunks and the required WASM asset
+- async auto-loading API plus loaded-only sync helpers
 - one small single-model API for counts, token IDs and byte offsets
 - generated tokenizer assets via `bun run fetch`
-- publish-ready browser `dist/` builds that bundle tokenizer assets, emit the required WASM files and include package metadata plus declarations
+- publish-ready browser `dist/` builds that keep vocabularies outside the JavaScript entry, emit the required WASM files and include package metadata plus declarations
 
 ## Usage
 
 ```ts
-import countTokens from 'token-vocabs'
+import tokenize from 'token-vocabs'
 
-console.dir(countTokens('mind goblin', 'gpt'))
+console.dir(await tokenize('mind goblin', 'gpt'))
 ```
 
 ```ts
-import countTokens from 'token-vocabs'
+import {count} from 'token-vocabs'
 
-console.dir(countTokens(new TextEncoder().encode('mind goblin'), {model: 'gpt'}))
+console.dir(await count(new TextEncoder().encode('mind goblin'), {model: 'gpt'}))
 ```
 
 ```ts
-import {tokenize} from 'token-vocabs'
+import {load, tokenizeLoaded} from 'token-vocabs'
 
-console.dir(tokenize('mind goblin', 'gpt'))
+await load(['gpt', 'deepseek'])
+console.dir(tokenizeLoaded('mind goblin', 'gpt'))
 ```
 
 ## Example output
 
 ```ts
-countTokens('mind goblin', 'gpt')
+await count('mind goblin', 'gpt')
 // 3
 ```
 
 ```ts
-tokenize('mind goblin', 'gpt')
+await tokenize('mind goblin', 'gpt')
 // {
 //   offsets: [4, 8],
 //   tokens: [77021, 18778, 4724],
@@ -64,26 +65,36 @@ tokenize('mind goblin', 'gpt')
 
 ## API
 
-### `countTokens(textOrBytes, optionsOrModel)`
+### `async count(textOrBytes, optionsOrModel)`
 
-Returns the token count for exactly one model.
+Returns the token count for exactly one model and loads the required vocabulary bundle on demand.
 
 `Uint8Array` input is decoded as UTF-8.
 
 ```ts
-countTokens('mind goblin', 'sdxl')
-countTokens('mind goblin', {model: 'gpt'})
-countTokens(new TextEncoder().encode('mind goblin'), 'gpt')
+await count('mind goblin', 'sdxl')
+await count('mind goblin', {model: 'gpt'})
+await count(new TextEncoder().encode('mind goblin'), 'gpt')
 ```
 
-### `tokenize(textOrBytes, optionsOrModel)`
+### `countLoaded(textOrBytes, optionsOrModel)`
 
-Returns a `RawTokenizeResult` for exactly one model.
+Synchronous count helper that uses the existing in-memory tokenizer state and throws if the requested vocabulary is not loaded yet.
+
+This is useful after `await load()` or after a previous `await count()` / `await tokenize()` call has already loaded the model.
+
+### `async tokenize(textOrBytes, optionsOrModel)`
+
+Returns a `RawTokenizeResult` for exactly one model and loads the required vocabulary bundle on demand.
 
 ```ts
-tokenize('mind goblin', 'gpt')
-tokenize('mind goblin', {model: 'gpt'})
+await tokenize('mind goblin', 'gpt')
+await tokenize('mind goblin', {model: 'gpt'})
 ```
+
+### `tokenizeLoaded(textOrBytes, optionsOrModel)`
+
+Synchronous tokenization helper that reuses already loaded vocabularies and throws if the requested model is not in memory yet.
 
 The result shape is:
 
@@ -99,7 +110,19 @@ type RawTokenizeResult = {
 
 If a tokenizer normalizes or otherwise preprocesses the input, `processedInput` contains the effective tokenizer input. Its type matches the input kind – string in, string out; `Uint8Array` in, `Uint8Array` out.
 
-If you need results for several models, call `countTokens()` or `tokenize()` once per model and combine the results yourself.
+If you need results for several models, call `count()` or `tokenize()` once per model and combine the results yourself.
+
+### `async load(modelSelection?)`
+
+Preloads one or more model vocabularies into memory.
+
+- `await load('gpt')` → resolves to `'gpt'`
+- `await load(['gpt', 'deepseek'])` → resolves to `['gpt', 'deepseek']`
+- `await load()` → loads every supported model and resolves to `modelIds`
+
+### `free(modelId?)`
+
+Releases a loaded model from memory, or every loaded model if no argument is provided.
 
 ### `modelIds`
 
@@ -111,24 +134,21 @@ Exports model metadata, including the original upstream source URLs used by `bun
 
 ### `token-vocabs/browser`
 
-Lazy browser entry with the same `countTokens()` and `tokenize()` API, plus:
+Browser entry with the same `count()`, `countLoaded()`, `tokenize()`, `tokenizeLoaded()`, `load()` and `free()` API as the desktop entry.
 
-- `loadModel(modelId)`
-- `loadModels(modelSelection?)`
-- `isModelLoaded(modelId)`
-- `getLoadedModelIds()`
-
-Load the required vocabularies first, then call the sync tokenization API.
+It loads the `.msgpack.br` asset bundles via `fetch()`.
 
 ### `token-vocabs/browser/all`
 
-Eager browser entry that preloads every vocabulary and keeps the original “load once, tokenize immediately” behavior.
+Eager browser entry that runs `await load()` at module initialization time so `countLoaded()` and `tokenizeLoaded()` work immediately after import.
 
 ## Asset workflow
 
 Raw fetched tokenizer assets are written to `./temp/data`.
 
-`bun run fetch` also generates importable asset modules under `./temp/generated`, which is what the library loads at runtime.
+`bun run fetch` also packs one binary vocabulary bundle per model under `./temp/generated/model-assets`.
+
+The desktop entry loads those bundles with `fs`, while the browser entry loads them with `fetch()`.
 
 Refresh them with:
 
@@ -144,23 +164,23 @@ bun run build
 
 That produces a `dist/` folder containing:
 
-- `dist/main.js` as the lazy browser entry – call `loadModels()` before tokenizing
+- `dist/main.js` as the lazy browser entry with the same async auto-loading API as the source package
 - `dist/all.js` as the eager browser entry that preloads every vocabulary
-- emitted chunk files under `dist/vocabulary/` and `dist/chunks/`, plus the required WASM asset for browser bundlers
+- one emitted `.msgpack.br` tokenizer bundle per model at `dist/`, shared chunks under `dist/chunks/` and the required WASM asset for browser bundlers
 - `dist/package.json`, `dist/README.md`, `dist/LICENSE` and declaration files so `dist/` can be published on its own
 
 Example lazy browser usage:
 
 ```ts
-import {countTokens, loadModels} from './dist/main.js'
+import {countLoaded, load} from './dist/main.js'
 
-await loadModels(['gpt', 'deepseek'])
-console.dir(countTokens('mind goblin', 'deepseek'))
+await load(['gpt', 'deepseek'])
+console.dir(countLoaded('mind goblin', 'deepseek'))
 ```
 
 ## Notes
 
 - `sdxl` intentionally implements the shared CLIP BPE core used by SDXL without auto-adding BOS/EOS tokens.
 - GPT uses `tiktoken`’s built-in `o200k_base` implementation, but the upstream encoder payload is still fetched and converted to MessagePack for completeness.
-- Structured tokenizer payloads are emitted into generated modules as ASCII85-encoded `.msgpack.br` blobs and decompressed before use.
+- Structured tokenizer payloads are stored inside per-model `.msgpack.br` bundles and decompressed after loading.
 - Tokenizer assets are large. That is inherent to exact offline tokenization.

@@ -2,6 +2,8 @@ import path from 'node:path'
 
 import fs from 'fs-extra'
 
+import {modelIds} from '#src/lib/models.ts'
+
 type RootPackageJson = {
   author?: Record<string, unknown> | string
   bugs?: {url?: string} | string
@@ -21,7 +23,8 @@ const rootFolder = path.resolve(import.meta.dirname, '..')
 const configFile = path.join(rootFolder, 'rolldown.config.ts')
 const declarationConfigFile = path.join(rootFolder, 'tsconfig.build.json')
 const distFolder = path.join(rootFolder, 'dist')
-const generatedAssetsIndexFile = path.join(rootFolder, 'temp/generated/model-assets/index.ts')
+const generatedAssetsFolder = path.join(rootFolder, 'temp/generated/model-assets')
+const generatedAssetsFiles = modelIds.map(modelId => path.join(generatedAssetsFolder, `${modelId}.msgpack.br`))
 const packageJsonFile = path.join(rootFolder, 'package.json')
 const assetWorkflowHeading = '## Asset workflow'
 const relativeTypeScriptImportPattern = /(["'])(\.{1,2}\/[^"']+)\.ts\1/gu
@@ -73,20 +76,20 @@ const prepareDistributionReadme = (content: string, packageName: string) => {
   const replacement = [
     '## Distribution layout',
     '',
-    `The published browser package exposes \`${packageName}\` and \`${packageName}/browser/all\` as the eager entry backed by \`all.js\`, plus \`${packageName}/browser\` as the lazy entry backed by \`main.js\`.`,
+    `The published browser package exposes \`${packageName}\` and \`${packageName}/browser\` as the lazy entry backed by \`main.js\`, plus \`${packageName}/browser/all\` as the eager entry backed by \`all.js\`.`,
     '',
     'It also contains:',
     '',
-    '- emitted chunk files under `vocabulary/` and `chunks/`, plus the required WASM asset',
+    '- one Brotli-compressed MessagePack asset bundle per model at the package root, shared chunks and the required WASM asset',
     '- `package.json`, `README.md`, `LICENSE` and declaration files so the folder can be published on its own',
     '',
     'Example lazy browser usage from the published package:',
     '',
     '```ts',
-    `import {countTokens, loadModels} from '${packageName}/browser'`,
+    `import {countLoaded, load} from '${packageName}/browser'`,
     '',
-    "await loadModels(['gpt', 'deepseek'])",
-    "console.dir(countTokens('mind goblin', 'deepseek'))",
+    "await load(['gpt', 'deepseek'])",
+    "console.dir(countLoaded('mind goblin', 'deepseek'))",
     '```',
     '',
     '',
@@ -150,22 +153,15 @@ const rewriteWasmAssetReferences = async () => {
 }
 const writeEntryDeclarations = async () => {
   const mainDeclarationLines = [
-    "import type {ModelId, ModelSelection} from './lib/api.js'",
-    '',
-    "export {countTokens, modelIds, models, tokenize} from './lib/api.js'",
+    "export {count, countLoaded, free, load, modelIds, models, tokenize, tokenizeLoaded} from './lib/api.js'",
     "export {default} from './lib/api.js'",
-    "export type {CountTokensOptions, CountTokensResult, ModelId, ModelSelection, RawTokenizeResult, TokenizeInput, TokenizeOptions, TokenizeResult} from './lib/api.js'",
-    '',
-    'export declare const isModelLoaded: (modelId: ModelId) => boolean',
-    'export declare const getLoadedModelIds: () => Array<ModelId>',
-    'export declare const loadModel: (modelId: ModelId) => Promise<ModelId>',
-    'export declare const loadModels: (model?: ModelSelection) => Promise<Array<ModelId>>',
+    "export type {CountOptions, CountResult, CountTokensOptions, CountTokensResult, ModelId, ModelSelection, RawTokenizeResult, TokenizeInput, TokenizeOptions, TokenizeResult} from './lib/api.js'",
     '',
   ]
   const allDeclarationLines = [
-    "export {countTokens, getLoadedModelIds, isModelLoaded, loadModel, loadModels, modelIds, models, tokenize} from './main.js'",
+    "export {count, countLoaded, free, load, modelIds, models, tokenize, tokenizeLoaded} from './main.js'",
     "export {default} from './main.js'",
-    "export type {CountTokensOptions, CountTokensResult, ModelId, ModelSelection, RawTokenizeResult, TokenizeInput, TokenizeOptions, TokenizeResult} from './main.js'",
+    "export type {CountOptions, CountResult, CountTokensOptions, CountTokensResult, ModelId, ModelSelection, RawTokenizeResult, TokenizeInput, TokenizeOptions, TokenizeResult} from './main.js'",
     '',
   ]
   await Bun.write(path.join(distFolder, 'main.d.ts'), mainDeclarationLines.join('\n'))
@@ -206,9 +202,9 @@ const writePackageJson = async (rootPackage: RootPackageJson) => {
   }
   outputPackage.exports = {
     '.': {
-      types: './all.d.ts',
-      import: './all.js',
-      default: './all.js',
+      types: './main.d.ts',
+      import: './main.js',
+      default: './main.js',
     },
     './browser': {
       types: './main.d.ts',
@@ -221,11 +217,19 @@ const writePackageJson = async (rootPackage: RootPackageJson) => {
       default: './all.js',
     },
   }
-  outputPackage.types = './all.d.ts'
+  outputPackage.types = './main.d.ts'
   await Bun.write(path.join(distFolder, 'package.json'), `${JSON.stringify(outputPackage, null, 2)}\n`)
 }
-if (!await Bun.file(generatedAssetsIndexFile).exists()) {
-  throw new Error(`Missing generated tokenizer assets at ${JSON.stringify(toForwardSlashes(generatedAssetsIndexFile))}. Run “bun run fetch” first.`)
+const getMissingGeneratedAssetsFile = async () => {
+  for (const generatedAssetsFile of generatedAssetsFiles) {
+    if (!await Bun.file(generatedAssetsFile).exists()) {
+      return generatedAssetsFile
+    }
+  }
+}
+const missingGeneratedAssetsFile = await getMissingGeneratedAssetsFile()
+if (missingGeneratedAssetsFile) {
+  throw new Error(`Missing generated tokenizer assets at ${JSON.stringify(toForwardSlashes(missingGeneratedAssetsFile))}. Run “bun run fetch” first.`)
 }
 const rootPackage = await Bun.file(packageJsonFile).json() as RootPackageJson
 await fs.rm(distFolder, {

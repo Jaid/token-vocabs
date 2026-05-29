@@ -2,28 +2,35 @@ import {expect, test} from 'bun:test'
 import path from 'node:path'
 
 const rootFolder = path.resolve(import.meta.dirname, '..')
-test('browser entry lazily loads selected vocabularies', async () => {
+test('browser entry fetches binary vocab bundles lazily and supports free()', async () => {
   const script = [
     'globalThis.DecompressionStream = undefined',
-    'const {countTokens, getLoadedModelIds, isModelLoaded, loadModels, tokenize} = await import(\'token-vocabs/browser\')',
+    'const {count, countLoaded, default: defaultTokenize, free, load, tokenize, tokenizeLoaded} = await import(\'token-vocabs/browser\')',
     'const sampleText = \'mind goblin\'',
     'let missingAssetError = \'\'',
     'try {',
-    '  tokenize(sampleText, \'gpt\')',
+    '  tokenizeLoaded(sampleText, \'gpt\')',
     '} catch (error) {',
     '  missingAssetError = error instanceof Error ? error.message : String(error)',
     '}',
-    'const initiallyLoadedModelIds = getLoadedModelIds()',
-    'const loadedModels = await loadModels([\'gpt\', \'deepseek\'])',
+    'const autoTokenization = await defaultTokenize(sampleText, \'gpt\')',
+    'const loadResult = await load([\'deepseek\', \'sdxl\'])',
+    'const deepseekCount = countLoaded(sampleText, {model: \'deepseek\'})',
+    'free(\'gpt\')',
+    'let freedAssetError = \'\'',
+    'try {',
+    '  countLoaded(sampleText, \'gpt\')',
+    '} catch (error) {',
+    '  freedAssetError = error instanceof Error ? error.message : String(error)',
+    '}',
     'console.log(JSON.stringify({',
-    '  count: countTokens(sampleText, {model: \'deepseek\'}),',
-    '  deepseekLoaded: isModelLoaded(\'deepseek\'),',
-    '  gptLoaded: isModelLoaded(\'gpt\'),',
-    '  initiallyLoadedModelIds,',
-    '  loadedModelIds: getLoadedModelIds(),',
-    '  loadedModels,',
+    '  autoCount: await count(sampleText, \'gpt\'),',
+    '  autoTokenization,',
+    '  deepseekCount,',
+    '  freedAssetError,',
+    '  loadResult,',
     '  missingAssetError,',
-    '  tokenization: tokenize(sampleText, \'gpt\'),',
+    '  reloadedTokenization: await tokenize(sampleText, \'gpt\'),',
     '}))',
   ].join('\n')
   const browserProcess = Bun.spawn(['bun', '--eval', script], {
@@ -39,27 +46,29 @@ test('browser entry lazily loads selected vocabularies', async () => {
   expect(exitCode).toBe(0)
   expect(stderr).toBe('')
   expect(JSON.parse(stdout)).toEqual({
-    count: 4,
-    deepseekLoaded: true,
-    gptLoaded: true,
-    initiallyLoadedModelIds: [],
-    loadedModelIds: ['gpt', 'deepseek'],
-    loadedModels: ['gpt', 'deepseek'],
-    missingAssetError: 'Missing tokenizer assets for model "gpt". Run “bun run fetch” first or load the vocabulary chunk before tokenizing.',
-    tokenization: {
+    autoCount: 3,
+    autoTokenization: {
+      offsets: [4, 8],
+      tokens: [77_021, 18_778, 4724],
+    },
+    deepseekCount: 4,
+    freedAssetError: 'Missing tokenizer assets for model "gpt". Call load() first or use tokenize()/count() to auto-load it.',
+    loadResult: ['deepseek', 'sdxl'],
+    missingAssetError: 'Missing tokenizer assets for model "gpt". Call load() first or use tokenize()/count() to auto-load it.',
+    reloadedTokenization: {
       offsets: [4, 8],
       tokens: [77_021, 18_778, 4724],
     },
   })
 }, 30_000)
-test('browser/all eagerly loads every vocabulary', async () => {
+test('browser/all eagerly loads every vocabulary bundle', async () => {
   const script = [
     'globalThis.DecompressionStream = undefined',
-    'const {default: countTokens, getLoadedModelIds, tokenize} = await import("token-vocabs/browser/all")',
+    'const {countLoaded, default: tokenize, free, tokenizeLoaded} = await import(\'token-vocabs/browser/all\')',
     'console.log(JSON.stringify({',
-    '  count: countTokens(\'mind goblin\', \'deepseek\'),',
-    '  loadedModelIds: getLoadedModelIds(),',
-    '  tokenization: tokenize(\'mind goblin\', \'gpt\'),',
+    '  firstCount: countLoaded(\'mind goblin\', \'deepseek\'),',
+    '  firstTokenization: tokenizeLoaded(\'mind goblin\', \'gpt\'),',
+    '  reloadedTokenization: (free(\'gpt\'), await tokenize(\'mind goblin\', \'gpt\')),',
     '}))',
   ].join('\n')
   const browserProcess = Bun.spawn(['bun', '--eval', script], {
@@ -75,9 +84,12 @@ test('browser/all eagerly loads every vocabulary', async () => {
   expect(exitCode).toBe(0)
   expect(stderr).toBe('')
   expect(JSON.parse(stdout)).toEqual({
-    count: 4,
-    loadedModelIds: ['gpt', 'gemma', 'qwen', 'kimi', 'deepseek', 'mimo', 'sdxl', 'glm', 'minimax'],
-    tokenization: {
+    firstCount: 4,
+    firstTokenization: {
+      offsets: [4, 8],
+      tokens: [77_021, 18_778, 4724],
+    },
+    reloadedTokenization: {
       offsets: [4, 8],
       tokens: [77_021, 18_778, 4724],
     },

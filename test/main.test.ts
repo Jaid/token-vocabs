@@ -1,6 +1,6 @@
 import {expect, test} from 'bun:test'
 
-import countTokens, {countTokens as countTokensNamed, modelIds, models, tokenize} from '#src/main.ts'
+import tokenize, {count, countLoaded, free, load, modelIds, models, tokenizeLoaded, tokenize as tokenizeNamed} from '#src/main.ts'
 
 const sampleText = 'mind goblin'
 const expectedTokenIds = {
@@ -22,77 +22,100 @@ const sampleTextBytes = textEncoder.encode(sampleText)
 const denormalizedSdxlInputBytes = textEncoder.encode(denormalizedSdxlInput)
 const normalizedSdxlInputBytes = textEncoder.encode(normalizedSdxlInput)
 const expectedTokenEntries = Object.entries(expectedTokenIds)
-test('exports the documented models and metadata', () => {
+const getErrorMessage = async (job: () => unknown) => {
+  try {
+    await job()
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error)
+  }
+  return ''
+}
+test('exports the documented models and async default export', () => {
   expect(modelIds).toEqual(['gpt', 'gemma', 'qwen', 'kimi', 'deepseek', 'mimo', 'sdxl', 'glm', 'minimax'])
   expect(Object.keys(models)).toEqual(modelIds)
-  expect(countTokensNamed).toBe(countTokens)
+  expect(tokenizeNamed).toBe(tokenize)
 })
-test('tokenize returns exact token IDs for all models', () => {
-  for (const [modelId, tokenIds] of expectedTokenEntries) {
-    expect(tokenize(sampleText, modelId as keyof typeof expectedTokenIds).tokens).toEqual(tokenIds)
-  }
-}, 30_000)
-test('countTokens returns exact counts for all models', () => {
-  for (const [modelId, tokenIds] of expectedTokenEntries) {
-    expect(countTokens(sampleText, modelId as keyof typeof expectedTokenIds)).toBe(tokenIds.length)
-  }
-}, 30_000)
-test('countTokens supports model IDs and options objects', () => {
-  expect(countTokens(sampleText, 'sdxl')).toBe(2)
-  expect(countTokens(sampleText, {model: 'gpt'})).toBe(3)
-})
-test('tokenize returns raw token data for the selected model', () => {
-  expect(tokenize(sampleText, 'gpt')).toEqual({
+test('loaded-only APIs require explicit preloading and free() unloads them again', async () => {
+  free()
+  expect(() => tokenizeLoaded(sampleText, 'gpt')).toThrow('Call load() first')
+  expect(() => countLoaded(sampleText, 'gpt')).toThrow('Call load() first')
+  expect(await load('gpt')).toBe('gpt')
+  expect(tokenizeLoaded(sampleText, 'gpt')).toEqual({
     offsets: [4, 8],
     tokens: [77_021, 18_778, 4724],
   })
-  expect(tokenize(sampleText, {model: 'gpt'})).toEqual({
-    offsets: [4, 8],
-    tokens: [77_021, 18_778, 4724],
-  })
+  expect(countLoaded(sampleText, 'gpt')).toBe(3)
+  free('gpt')
+  expect(() => tokenizeLoaded(sampleText, 'gpt')).toThrow('Call load() first')
+  expect(() => countLoaded(sampleText, 'gpt')).toThrow('Call load() first')
 })
-test('counts match tokenize lengths for a broader sample', () => {
-  const text = 'Hello, world! 你好 123'
-  for (const modelId of modelIds) {
-    const tokenization = tokenize(text, modelId)
-    expect(countTokens(text, modelId)).toBe(tokenization.tokens.length)
-  }
-})
-test('empty text stays empty across all tokenizers', () => {
-  for (const modelId of modelIds) {
-    expect(tokenize('', modelId)).toEqual({
+test('async tokenize() and count() auto-load and match the golden fixtures for all models', async () => {
+  free()
+  const broaderText = 'Hello, world! 你好 123'
+  for (const [modelId, tokenIds] of expectedTokenEntries) {
+    const tokenization = await tokenize(sampleText, modelId as keyof typeof expectedTokenIds)
+    expect(tokenization.tokens).toEqual(tokenIds)
+    expect(tokenizeLoaded(sampleText, modelId as keyof typeof expectedTokenIds).tokens).toEqual(tokenIds)
+    expect(await count(sampleText, modelId as keyof typeof expectedTokenIds)).toBe(tokenIds.length)
+    expect(countLoaded(sampleText, modelId as keyof typeof expectedTokenIds)).toBe(tokenIds.length)
+    const broaderTokenization = await tokenize(broaderText, modelId as keyof typeof expectedTokenIds)
+    expect(await count(broaderText, modelId as keyof typeof expectedTokenIds)).toBe(broaderTokenization.tokens.length)
+    expect(await tokenize('', modelId as keyof typeof expectedTokenIds)).toEqual({
       offsets: [],
       tokens: [],
     })
-    expect(countTokens('', modelId)).toBe(0)
+    expect(await count('', modelId as keyof typeof expectedTokenIds)).toBe(0)
   }
+}, 30_000)
+test('load() preloads specific models and supports single-model plus multi-model selections', async () => {
+  free()
+  expect(await load('gpt')).toBe('gpt')
+  expect(tokenizeLoaded(sampleText, 'gpt').tokens).toEqual(expectedTokenIds.gpt)
+  expect(await load(['deepseek', 'sdxl'])).toEqual(['deepseek', 'sdxl'])
+  expect(countLoaded(sampleText, {model: 'deepseek'})).toBe(expectedTokenIds.deepseek.length)
+  expect(tokenizeLoaded(sampleText, 'sdxl').tokens).toEqual(expectedTokenIds.sdxl)
+  free()
+  expect(() => tokenizeLoaded(sampleText, 'gpt')).toThrow('Call load() first')
+  expect(() => countLoaded(sampleText, 'deepseek')).toThrow('Call load() first')
 })
-test('supports UTF-8 byte input', () => {
-  expect(countTokens(sampleTextBytes, 'gpt')).toBe(3)
-  expect(tokenize(sampleTextBytes, 'gpt')).toEqual({
+test('supports UTF-8 byte input and rejects invalid UTF-8 in both async and loaded-only APIs', async () => {
+  free()
+  expect(await count(sampleTextBytes, 'gpt')).toBe(3)
+  expect(await tokenize(sampleTextBytes, 'gpt')).toEqual({
     offsets: [4, 8],
     tokens: [77_021, 18_778, 4724],
   })
+  expect(tokenizeLoaded(sampleTextBytes, 'gpt')).toEqual({
+    offsets: [4, 8],
+    tokens: [77_021, 18_778, 4724],
+  })
+  expect(await getErrorMessage(() => count(invalidUtf8Bytes, 'gpt'))).toContain('valid UTF-8')
+  expect(() => countLoaded(invalidUtf8Bytes, 'gpt')).toThrow('valid UTF-8')
+  expect(await getErrorMessage(() => tokenize(invalidUtf8Bytes, 'gpt'))).toContain('valid UTF-8')
+  expect(() => tokenizeLoaded(invalidUtf8Bytes, 'gpt')).toThrow('valid UTF-8')
 })
-test('rejects invalid UTF-8 byte input', () => {
-  expect(() => countTokens(invalidUtf8Bytes, 'gpt')).toThrow('valid UTF-8')
-  expect(() => tokenize(invalidUtf8Bytes, 'gpt')).toThrow('valid UTF-8')
-})
-test('reports normalized CLIP input when preprocessing changes it', () => {
-  expect(tokenize(denormalizedSdxlInput, 'sdxl')).toEqual({
+test('reports normalized CLIP input when preprocessing changes it', async () => {
+  free()
+  expect(await tokenize(denormalizedSdxlInput, 'sdxl')).toEqual({
     offsets: [5],
     processedInput: normalizedSdxlInput,
     tokens: [2575, 26_223],
   })
-  expect(tokenize(denormalizedSdxlInputBytes, 'sdxl')).toEqual({
+  expect(tokenizeLoaded(denormalizedSdxlInputBytes, 'sdxl')).toEqual({
     offsets: [5],
     processedInput: normalizedSdxlInputBytes,
     tokens: [2575, 26_223],
   })
 })
-test('throws on unsupported model selections', () => {
-  expect(() => countTokens(sampleText, {model: ['gpt', 'deepseek'] as never})).toThrow('requires a single model ID')
-  expect(() => tokenize(sampleText, {model: ['gpt', 'deepseek'] as never})).toThrow('requires a single model ID')
-  expect(() => countTokens(sampleText, {model: 'bogus' as never})).toThrow('Unknown model')
-  expect(() => tokenize(sampleText, 'bogus' as never)).toThrow('Unknown model')
+test('throws on unsupported model selections', async () => {
+  free()
+  expect(() => countLoaded(sampleText, {model: ['gpt', 'deepseek'] as never})).toThrow('requires a single model ID')
+  expect(() => tokenizeLoaded(sampleText, {model: ['gpt', 'deepseek'] as never})).toThrow('requires a single model ID')
+  expect(await getErrorMessage(() => count(sampleText, {model: ['gpt', 'deepseek'] as never}))).toContain('requires a single model ID')
+  expect(await getErrorMessage(() => tokenize(sampleText, {model: ['gpt', 'deepseek'] as never}))).toContain('requires a single model ID')
+  expect(await getErrorMessage(() => load('bogus' as never))).toContain('Unknown model')
+  expect(() => countLoaded(sampleText, {model: 'bogus' as never})).toThrow('Unknown model')
+  expect(() => tokenizeLoaded(sampleText, 'bogus' as never)).toThrow('Unknown model')
+  expect(await getErrorMessage(() => count(sampleText, {model: 'bogus' as never}))).toContain('Unknown model')
+  expect(await getErrorMessage(() => tokenize(sampleText, 'bogus' as never))).toContain('Unknown model')
 })

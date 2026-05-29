@@ -1,9 +1,8 @@
-import type {ModelAssetFiles} from './modelAssets.ts'
+import type {ModelAssetBundleLoader, ModelAssetFiles} from './modelAssets/base/ModelAssetBundleLoader.ts'
 import type {ModelId} from './models.ts'
 
 import {Unpackr} from 'msgpackr/unpack'
 
-import {decodeBase85} from './base85Decode.ts'
 import {modelIds} from './models.ts'
 
 export type ModelAssetMap = Partial<Record<ModelId, ModelAssetFiles>>
@@ -18,19 +17,24 @@ const unpackr = new UnpackrConstructor({
 })
 const textDecoder = new TextDecoder
 const modelAssetMap = Object.create(null) as ModelAssetMap
-const binaryCache = new Map<string, Uint8Array>
+const modelAssetLoadPromises = new Map<ModelId, Promise<void>>
+const modelAssetRevisions = Object.create(null) as Partial<Record<ModelId, number>>
 const msgpackCache = new Map<string, unknown>
 const textCache = new Map<string, string>
+let modelAssetBundleLoader: ModelAssetBundleLoader | undefined
 const getModelFileKey = (modelId: ModelId, fileName: string) => {
   return `${modelId}/${fileName}`
 }
+const getModelRevision = (modelId: ModelId) => {
+  return modelAssetRevisions[modelId] ?? 0
+}
+const bumpModelRevision = (modelId: ModelId) => {
+  const nextRevision = getModelRevision(modelId) + 1
+  modelAssetRevisions[modelId] = nextRevision
+  return nextRevision
+}
 const clearModelCaches = (modelId: ModelId) => {
   const cacheKeyPrefix = `${modelId}/`
-  for (const cacheKey of binaryCache.keys()) {
-    if (cacheKey.startsWith(cacheKeyPrefix)) {
-      binaryCache.delete(cacheKey)
-    }
-  }
   for (const cacheKey of textCache.keys()) {
     if (cacheKey.startsWith(cacheKeyPrefix)) {
       textCache.delete(cacheKey)
@@ -45,31 +49,25 @@ const clearModelCaches = (modelId: ModelId) => {
 const getModelFiles = (modelId: ModelId) => {
   const files = modelAssetMap[modelId]
   if (!files) {
-    throw new Error(`Missing tokenizer assets for model ${JSON.stringify(modelId)}. Run “bun run fetch” first or load the vocabulary chunk before tokenizing.`)
+    throw new Error(`Missing tokenizer assets for model ${JSON.stringify(modelId)}. Call load() first or use tokenize()/count() to auto-load it.`)
   }
   return files
 }
+const getModelAssetBundleLoader = () => {
+  if (!modelAssetBundleLoader) {
+    throw new Error('No tokenizer asset loader is registered for the current entry.')
+  }
+  return modelAssetBundleLoader
+}
 const getEncodedModelFile = (modelId: ModelId, fileName: string) => {
-  const file = getModelFiles(modelId)[fileName]
-  if (!file) {
+  const files = getModelFiles(modelId)
+  if (!Object.hasOwn(files, fileName)) {
     throw new Error(`Missing tokenizer asset ${JSON.stringify(fileName)} for model ${JSON.stringify(modelId)}. Run “bun run fetch” first.`)
   }
-  return file
+  return files[fileName]
 }
 const getModelFileBytes = (modelId: ModelId, fileName: string) => {
-  const cacheKey = getModelFileKey(modelId, fileName)
-  const cached = binaryCache.get(cacheKey)
-  if (cached) {
-    return cached
-  }
-  const file = getEncodedModelFile(modelId, fileName)
-  if (file instanceof Uint8Array) {
-    binaryCache.set(cacheKey, file)
-    return file
-  }
-  const decoded = decodeBase85(file)
-  binaryCache.set(cacheKey, decoded)
-  return decoded
+  return getEncodedModelFile(modelId, fileName)
 }
 const toMsgpackFileName = (fileName: string) => {
   if (fileName.endsWith('.msgpack')) {
@@ -80,23 +78,60 @@ const toMsgpackFileName = (fileName: string) => {
   }
   throw new TypeError(`Expected a MessagePack or JSON file name, got ${JSON.stringify(fileName)}.`)
 }
-
-export const hasModelAssets = (modelId: ModelId) => {
+const hasModelAssets = (modelId: ModelId) => {
   return Object.hasOwn(modelAssetMap, modelId)
 }
 
-export const registerModelAssets = (modelId: ModelId, files: ModelAssetFiles) => {
+export const registerModelAssetBundleLoader = (loader: ModelAssetBundleLoader) => {
+  modelAssetBundleLoader = loader
+}
+
+const registerModelAssets = (modelId: ModelId, files: ModelAssetFiles) => {
   modelAssetMap[modelId] = files
   clearModelCaches(modelId)
 }
 
-export const registerModelAssetMap = (assets: ModelAssetMap) => {
-  for (const modelId of modelIds) {
-    const files = assets[modelId]
-    if (!files) {
-      continue
+export const loadModelAssets = async (selectedModels: ReadonlyArray<ModelId>) => {
+  await Promise.all(selectedModels.map(async modelId => {
+    if (hasModelAssets(modelId)) {
+      return
     }
-    registerModelAssets(modelId, files)
+    const existingLoadPromise = modelAssetLoadPromises.get(modelId)
+    if (existingLoadPromise) {
+      await existingLoadPromise
+      return
+    }
+    const revision = getModelRevision(modelId)
+    const loadPromise = (async () => {
+      const files = await getModelAssetBundleLoader().load(modelId)
+      if (getModelRevision(modelId) !== revision) {
+        return
+      }
+      registerModelAssets(modelId, files)
+    })().finally(() => {
+      if (modelAssetLoadPromises.get(modelId) === loadPromise) {
+        modelAssetLoadPromises.delete(modelId)
+      }
+    })
+    modelAssetLoadPromises.set(modelId, loadPromise)
+    await loadPromise
+  }))
+}
+
+const freeSingleModelAssets = (modelId: ModelId) => {
+  bumpModelRevision(modelId)
+  delete modelAssetMap[modelId]
+  modelAssetLoadPromises.delete(modelId)
+  clearModelCaches(modelId)
+}
+
+export const freeModelAssets = (modelId?: ModelId) => {
+  if (modelId) {
+    freeSingleModelAssets(modelId)
+    return
+  }
+  for (const listedModelId of modelIds) {
+    freeSingleModelAssets(listedModelId)
   }
 }
 
@@ -124,8 +159,4 @@ export const readModelMsgpackFile = <T>(modelId: ModelId, fileName: string): T =
   const unpacked = unpackr.unpack(getModelFileBytes(modelId, normalizedFileName)) as T
   msgpackCache.set(cacheKey, unpacked)
   return unpacked
-}
-
-export const getAvailableModelIds = () => {
-  return modelIds.filter(modelId => hasModelAssets(modelId))
 }
