@@ -5,9 +5,17 @@ import {get_encoding, Tiktoken} from 'tiktoken'
 
 import {readModelMsgpackFile, readModelTextFile} from '../data.ts'
 import {getRequiredMapValue, toPlainObject} from '../structuredData.ts'
+import {toRawTokenizeResultFromTokenByteLengths} from '../tokenization.ts'
 import {BaseTokenizer} from './base/BaseTokenizer.ts'
 
-export class BuiltinTiktokenTokenizer extends BaseTokenizer<Tiktoken> {
+abstract class BaseTiktokenTokenizer extends BaseTokenizer<Tiktoken> {
+  protected override tokenizeWithState(text: string, state: Tiktoken) {
+    const tokenIds = this.encodeWithState(text, state)
+    return toRawTokenizeResultFromTokenByteLengths(tokenIds, tokenIds.map(tokenId => state.decode_single_token_bytes(tokenId).length))
+  }
+}
+
+export class BuiltinTiktokenTokenizer extends BaseTiktokenTokenizer {
   constructor(readonly modelId: ModelId) {
     super()
   }
@@ -22,7 +30,7 @@ export class BuiltinTiktokenTokenizer extends BaseTokenizer<Tiktoken> {
   }
 }
 
-export class CustomTiktokenTokenizer extends BaseTokenizer<Tiktoken> {
+export class CustomTiktokenTokenizer extends BaseTiktokenTokenizer {
   constructor(readonly modelId: ModelId) {
     super()
   }

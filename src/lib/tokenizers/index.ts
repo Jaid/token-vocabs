@@ -1,4 +1,5 @@
 import type {ModelId} from '../models.ts'
+import type {RawTokenizeResult, TokenizeInput} from '../tokenization.ts'
 
 import {models} from '../models.ts'
 import {ClipTokenizer} from './ClipTokenizer.ts'
@@ -6,8 +7,9 @@ import {HuggingFaceTokenizer} from './HuggingFaceTokenizer.ts'
 import {BuiltinTiktokenTokenizer, CustomTiktokenTokenizer} from './TiktokenTokenizer.ts'
 
 type TokenizerLike = {
-  encode: (text: string) => Array<number>
-  getTokenCount: (text: string) => number
+  encode: (input: TokenizeInput) => Array<number>
+  getTokenCount: (input: TokenizeInput) => number
+  tokenize: (input: TokenizeInput) => RawTokenizeResult
 }
 
 const tokenizerCache = new Map<ModelId, TokenizerLike>

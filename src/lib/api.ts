@@ -1,97 +1,48 @@
 import type {ModelId} from './models.ts'
-import type {ModelSelection} from './modelSelection.ts'
+import type {RawTokenizeResult, TokenizeInput} from './tokenization.ts'
 
 import {modelIds, models} from './models.ts'
 import {normalizeModelList} from './modelSelection.ts'
 import {getTokenizer} from './tokenizers/index.ts'
-import type {TokenizeResult} from '#src/main.ts'
 
-export type TokenizeInput = Uint8Array | string
-
-export type RawTokenizeResultBase = {
-  /**
-   * array of byte starting offsets for every token after the first one
-   *
-   * Offsets are measured against the tokenizer’s effective UTF-8 text representation after its built-in normalization and preprocessing. That usually matches the provided input, but tokenizers that normalize or discard characters can shift the reported positions.
-   *
-   * The array length is equal to the number of tokens minus one, since the first token always starts at byte offset `0` within that effective tokenizer input.
-   */
-  offsets: Array<number>
-  /**
-   * array of token IDs in token order
-   */
-  tokens: Array<number>
-}
-
-export type RawTextTokenizeResultExtension = {
-  /**
-   * the actual input passed to the tokenizer after applying all preprocessing/normalization steps
-   *
-   * If no such steps are defined by the corresponding tokenizer or they didn’t modify the input, this property is absent.
-   */
-  processedInput?: string
-}
-
-export type RawBinaryTokenizeResultExtension = {
-  /**
-   * the actual input passed to the tokenizer after applying all preprocessing/normalization steps
-   *
-   * If no such steps are defined by the corresponding tokenizer or they didn’t modify the input, this property is absent.
-   */
-  processedInput?: Uint8Array
-}
-
-export type RawTokenizeResult<InputGeneric extends TokenizeInput = string> = RawTokenizeResultBase & (InputGeneric extends Uint8Array ? RawBinaryTokenizeResultExtension : RawTextTokenizeResultExtension)
+export type {ModelSelection} from './modelSelection.ts'
 
 export type CountTokensResult = number
+export type TokenizeResult<InputGeneric extends TokenizeInput = TokenizeInput> = RawTokenizeResult<InputGeneric>
 
-export type CountTokensOptions<TModel extends ModelSelection | undefined = undefined> = {
-  model?: TModel
+export type TokenizeOptions<TModel extends ModelId = ModelId> = SingleModelOptions<TModel>
+
+export type CountTokensOptions<TModel extends ModelId = ModelId> = SingleModelOptions<TModel>
+type SingleModelOptions<TModel extends ModelId = ModelId> = {
+  model: TModel
 }
 
-const resolveSelectedModels = (optionsOrModel?: CountTokensOptions<ModelSelection> | ModelId) => {
+const resolveSelectedModel = (functionName: 'countTokens' | 'tokenize', optionsOrModel?: ModelId | SingleModelOptions) => {
   if (typeof optionsOrModel === 'string') {
     const [selectedModel] = normalizeModelList(optionsOrModel)
-    return {
-      isSingleModel: true,
-      models: [selectedModel],
-    }
+    return selectedModel
   }
   const model = optionsOrModel?.model
-  return {
-    isSingleModel: typeof model === 'string',
-    models: normalizeModelList(model),
+  if (typeof model !== 'string') {
+    throw new TypeError(`${functionName}() requires a single model ID as the second argument.`)
   }
-}
-const tokenizeInternal = (text: string, optionsOrModel?: CountTokensOptions<ModelSelection> | ModelId): Array<number> | Partial<TokenizeResult> | TokenizeResult => {
-  const {isSingleModel, models: selectedModels} = resolveSelectedModels(optionsOrModel)
-  if (isSingleModel) {
-    const [selectedModel] = selectedModels
-    return getTokenizer(selectedModel).encode(text)
-  }
-  return Object.fromEntries(selectedModels.map(modelId => [modelId, getTokenizer(modelId).encode(text)]))
+  const [selectedModel] = normalizeModelList(model)
+  return selectedModel
 }
 
-export function tokenize<TModel extends ModelId>(text: string, model: TModel): Array<number>
-export function tokenize<TModels extends ReadonlyArray<ModelId>>(text: string, options: CountTokensOptions<TModels>): Pick<TokenizeResult, TModels[number]>
-export function tokenize<TModel extends ModelId>(text: string, options: CountTokensOptions<TModel>): Array<number>
-export function tokenize(text: string, options?: CountTokensOptions<ReadonlyArray<ModelId>>): TokenizeResult
-export function tokenize(text: string, optionsOrModel?: CountTokensOptions<ModelSelection> | ModelId): Array<number> | Partial<TokenizeResult> | TokenizeResult {
-  return tokenizeInternal(text, optionsOrModel)
+export function tokenize<InputGeneric extends TokenizeInput, TModel extends ModelId>(input: InputGeneric, model: TModel): RawTokenizeResult<InputGeneric>
+export function tokenize<InputGeneric extends TokenizeInput, TModel extends ModelId>(input: InputGeneric, options: TokenizeOptions<TModel>): RawTokenizeResult<InputGeneric>
+export function tokenize(input: TokenizeInput, optionsOrModel?: ModelId | TokenizeOptions): RawTokenizeResult {
+  return getTokenizer(resolveSelectedModel('tokenize', optionsOrModel)).tokenize(input)
 }
 
-export function countTokens<TModel extends ModelId>(text: string, model: TModel): number
-export function countTokens<TModels extends ReadonlyArray<ModelId>>(text: string, options: CountTokensOptions<TModels>): Pick<CountTokensResult, TModels[number]>
-export function countTokens<TModel extends ModelId>(text: string, options: CountTokensOptions<TModel>): number
-export function countTokens(text: string, options?: CountTokensOptions<ReadonlyArray<ModelId>>): CountTokensResult
-export function countTokens(text: string, optionsOrModel?: CountTokensOptions<ModelSelection> | ModelId): CountTokensResult {
-  const tokenIds = tokenizeInternal(text, optionsOrModel)
-  if (Array.isArray(tokenIds)) {
-    return tokenIds.length
-  }
-  return Object.fromEntries(Object.entries(tokenIds).map(([modelId, ids]) => [modelId, ids.length]))
+export function countTokens<TModel extends ModelId>(input: TokenizeInput, model: TModel): CountTokensResult
+export function countTokens<TModel extends ModelId>(input: TokenizeInput, options: CountTokensOptions<TModel>): CountTokensResult
+export function countTokens(input: TokenizeInput, optionsOrModel?: CountTokensOptions | ModelId): CountTokensResult {
+  return getTokenizer(resolveSelectedModel('countTokens', optionsOrModel)).getTokenCount(input)
 }
 
 export {modelIds, models}
 export default countTokens
-export type {ModelId, ModelSelection}
+export type {ModelId}
+export type {RawTokenizeResult, TokenizeInput} from './tokenization.ts'

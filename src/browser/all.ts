@@ -34,4 +34,4 @@ registerModelAssetMap({
 })
 
 export {countTokens, default, getLoadedModelIds, isModelLoaded, loadModel, loadModels, modelIds, models, tokenize} from './main.ts'
-export type {CountTokensOptions, CountTokensResult, ModelId, ModelSelection, TokenizeResult} from './main.ts'
+export type {CountTokensOptions, CountTokensResult, ModelId, ModelSelection, RawTokenizeResult, TokenizeInput, TokenizeOptions, TokenizeResult} from './main.ts'

@@ -23,7 +23,7 @@ Count tokens or inspect token IDs across several modern tokenizer families from 
 - browser Brotli decompression with a bundled JS fallback where native stream support is missing
 - Rolldown browser builds that can lazy-load one chunk per vocabulary, plus an eager `all.js` variant and the required WASM asset
 - sync API for convenience
-- one shared interface for count-oriented and token-ID-oriented usage
+- one small single-model API for counts, token IDs and byte offsets
 - generated tokenizer assets via `bun run fetch`
 - publish-ready browser `dist/` builds that bundle tokenizer assets, emit the required WASM files and include package metadata plus declarations
 
@@ -32,75 +32,74 @@ Count tokens or inspect token IDs across several modern tokenizer families from 
 ```ts
 import countTokens from 'token-vocabs'
 
-console.dir(countTokens('mind goblin'))
-```
-
-```ts
-import countTokens from 'token-vocabs'
-
-console.dir(countTokens('mind goblin', {model: ['gpt', 'deepseek']}))
-```
-
-```ts
-import countTokens from 'token-vocabs'
-
 console.dir(countTokens('mind goblin', 'gpt'))
+```
+
+```ts
+import countTokens from 'token-vocabs'
+
+console.dir(countTokens(new TextEncoder().encode('mind goblin'), {model: 'gpt'}))
 ```
 
 ```ts
 import {tokenize} from 'token-vocabs'
 
-console.dir(tokenize('mind goblin'))
+console.dir(tokenize('mind goblin', 'gpt'))
 ```
 
 ## Example output
 
 ```ts
-countTokens('mind goblin')
-// {
-//   gpt: 3,
-//   gemma: 2,
-//   qwen: 3,
-//   kimi: 4,
-//   deepseek: 4,
-//   mimo: 3,
-//   sdxl: 2,
-//   glm: 3,
-//   minimax: 3,
-// }
+countTokens('mind goblin', 'gpt')
+// 3
 ```
 
 ```ts
-tokenize('mind goblin')
+tokenize('mind goblin', 'gpt')
 // {
-//   gpt: [77021, 18778, 4724],
-//   gemma: [24447, 218798],
-//   qwen: [36475, 338, 45491],
-//   kimi: [66468, 970, 3145, 259],
-//   deepseek: [60514, 807, 3778, 261],
-//   mimo: [37724, 342, 47061],
-//   sdxl: [2575, 26223],
-//   glm: [37528, 342, 46771],
-//   minimax: [68201, 113859, 259],
+//   offsets: [4, 8],
+//   tokens: [77021, 18778, 4724],
 // }
 ```
 
 ## API
 
-### `countTokens(text, options?)`
+### `countTokens(textOrBytes, optionsOrModel)`
 
-Returns token counts.
+Returns the token count for exactly one model.
+
+`Uint8Array` input is decoded as UTF-8.
 
 ```ts
-countTokens('mind goblin')
 countTokens('mind goblin', 'sdxl')
 countTokens('mind goblin', {model: 'gpt'})
-countTokens('mind goblin', {model: ['gpt', 'deepseek']})
+countTokens(new TextEncoder().encode('mind goblin'), 'gpt')
 ```
 
-### `tokenize(text, options?)`
+### `tokenize(textOrBytes, optionsOrModel)`
 
-Returns token ID arrays with the same selection rules as `countTokens()`.
+Returns a `RawTokenizeResult` for exactly one model.
+
+```ts
+tokenize('mind goblin', 'gpt')
+tokenize('mind goblin', {model: 'gpt'})
+```
+
+The result shape is:
+
+```ts
+type RawTokenizeResult = {
+  offsets: number[]
+  tokens: number[]
+  processedInput?: string | Uint8Array
+}
+```
+
+`offsets` omits the first token’s implicit `0` byte start to save one array slot.
+
+If a tokenizer normalizes or otherwise preprocesses the input, `processedInput` contains the effective tokenizer input. Its type matches the input kind – string in, string out; `Uint8Array` in, `Uint8Array` out.
+
+If you need results for several models, call `countTokens()` or `tokenize()` once per model and combine the results yourself.
 
 ### `modelIds`
 
@@ -156,7 +155,7 @@ Example lazy browser usage:
 import {countTokens, loadModels} from './dist/main.js'
 
 await loadModels(['gpt', 'deepseek'])
-console.dir(countTokens('mind goblin', {model: ['gpt', 'deepseek']}))
+console.dir(countTokens('mind goblin', 'deepseek'))
 ```
 
 ## Notes

@@ -86,7 +86,7 @@ const prepareDistributionReadme = (content: string, packageName: string) => {
     `import {countTokens, loadModels} from '${packageName}/browser'`,
     '',
     "await loadModels(['gpt', 'deepseek'])",
-    "console.dir(countTokens('mind goblin', {model: ['gpt', 'deepseek']}))",
+    "console.dir(countTokens('mind goblin', 'deepseek'))",
     '```',
     '',
     '',
@@ -154,7 +154,7 @@ const writeEntryDeclarations = async () => {
     '',
     "export {countTokens, modelIds, models, tokenize} from './lib/api.js'",
     "export {default} from './lib/api.js'",
-    "export type {CountTokensOptions, CountTokensResult, ModelId, ModelSelection, TokenizeResult} from './lib/api.js'",
+    "export type {CountTokensOptions, CountTokensResult, ModelId, ModelSelection, RawTokenizeResult, TokenizeInput, TokenizeOptions, TokenizeResult} from './lib/api.js'",
     '',
     'export declare const isModelLoaded: (modelId: ModelId) => boolean',
     'export declare const getLoadedModelIds: () => Array<ModelId>',
@@ -165,7 +165,7 @@ const writeEntryDeclarations = async () => {
   const allDeclarationLines = [
     "export {countTokens, getLoadedModelIds, isModelLoaded, loadModel, loadModels, modelIds, models, tokenize} from './main.js'",
     "export {default} from './main.js'",
-    "export type {CountTokensOptions, CountTokensResult, ModelId, ModelSelection, TokenizeResult} from './main.js'",
+    "export type {CountTokensOptions, CountTokensResult, ModelId, ModelSelection, RawTokenizeResult, TokenizeInput, TokenizeOptions, TokenizeResult} from './main.js'",
     '',
   ]
   await Bun.write(path.join(distFolder, 'main.d.ts'), mainDeclarationLines.join('\n'))

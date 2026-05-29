@@ -7,7 +7,7 @@ import {prepareEncodedModelAssets} from '../lib/modelAssets.ts'
 import {normalizeModelList} from '../lib/modelSelection.ts'
 
 export {countTokens, default, modelIds, models, tokenize} from '../lib/api.ts'
-export type {CountTokensOptions, CountTokensResult, ModelSelection, TokenizeResult} from '../lib/api.ts'
+export type {CountTokensOptions, CountTokensResult, ModelSelection, RawTokenizeResult, TokenizeInput, TokenizeOptions, TokenizeResult} from '../lib/api.ts'
 export type {ModelId}
 
 type ModelAssetModule = {

@@ -1,6 +1,8 @@
 import type {ModelId} from '../models.ts'
+import type {RawTextTokenizeResult} from '../tokenization.ts'
 
 import {readModelMsgpackFile, readModelTextFile} from '../data.ts'
+import {getUtf8ByteLength, toRawTokenizeResult} from '../tokenization.ts'
 import {BaseTokenizer} from './base/BaseTokenizer.ts'
 
 type ClipTokenizerState = {
@@ -12,6 +14,7 @@ type ClipTokenizerState = {
 }
 
 const clipPattern = /<\|startoftext\|>|<\|endoftext\|>|'d|'ll|'m|'re|'s|'t|'ve|\p{L}+|\p{N}|[^\s\p{L}\p{N}]+/gu
+const clipWordSuffixPattern = /<\/w>$/u
 const whitespacePattern = /\s+/gu
 const textEncoder = new TextEncoder
 const toTokenContent = (value: unknown) => {
@@ -59,6 +62,18 @@ const createMergeRanks = (mergesText: string) => {
 const normalizeText = (text: string) => {
   return text.normalize('NFC').replaceAll(whitespacePattern, ' ').trim().toLowerCase()
 }
+const toClipTokenByteLength = (token: string) => {
+  return [...token.replace(clipWordSuffixPattern, '')].length
+}
+const withProcessedInput = (result: RawTextTokenizeResult, originalInput: string, processedInput: string) => {
+  if (processedInput === originalInput) {
+    return result
+  }
+  return {
+    ...result,
+    processedInput,
+  }
+}
 
 export class ClipTokenizer extends BaseTokenizer<ClipTokenizerState> {
   readonly #bpeCache = new Map<string, Array<string>>
@@ -96,24 +111,45 @@ export class ClipTokenizer extends BaseTokenizer<ClipTokenizerState> {
   }
 
   protected override encodeWithState(text: string, state: ClipTokenizerState) {
+    return this.tokenizeWithState(text, state).tokens
+  }
+
+  protected override tokenizeWithState(text: string, state: ClipTokenizerState) {
     const normalizedText = normalizeText(text)
     if (!normalizedText) {
-      return []
+      return withProcessedInput({
+        offsets: [],
+        tokens: [],
+      }, text, normalizedText)
     }
-    const ids: Array<number> = []
+    const tokenIds: Array<number> = []
+    const tokenStartOffsets: Array<number> = []
+    let currentByteOffset = 0
+    let previousMatchEnd = 0
     for (const match of normalizedText.matchAll(clipPattern)) {
       const piece = match[0]
+      const pieceOffset = match.index
+      currentByteOffset += getUtf8ByteLength(normalizedText.slice(previousMatchEnd, pieceOffset))
+      const tokenStartOffset = currentByteOffset
       const specialTokenId = state.specialTokenIds.get(piece)
       if (specialTokenId !== undefined) {
-        ids.push(specialTokenId)
+        tokenIds.push(specialTokenId)
+        tokenStartOffsets.push(tokenStartOffset)
+        currentByteOffset += getUtf8ByteLength(piece)
+        previousMatchEnd = pieceOffset + piece.length
         continue
       }
       const encodedPiece = Array.from(textEncoder.encode(piece), byte => state.byteEncoder[byte]).join('')
+      let localByteOffset = 0
       for (const token of this.#applyBpe(encodedPiece, state.mergeRanks)) {
-        ids.push(state.vocabulary.get(token) ?? state.unknownTokenId)
+        tokenIds.push(state.vocabulary.get(token) ?? state.unknownTokenId)
+        tokenStartOffsets.push(tokenStartOffset + localByteOffset)
+        localByteOffset += toClipTokenByteLength(token)
       }
+      currentByteOffset += getUtf8ByteLength(piece)
+      previousMatchEnd = pieceOffset + piece.length
     }
-    return ids
+    return withProcessedInput(toRawTokenizeResult(tokenIds, tokenStartOffsets), text, normalizedText)
   }
 
   #applyBpe(token: string, mergeRanks: Map<string, number>) {

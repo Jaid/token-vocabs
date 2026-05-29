@@ -16,14 +16,14 @@ test('browser entry lazily loads selected vocabularies', async () => {
     'const initiallyLoadedModelIds = getLoadedModelIds()',
     'const loadedModels = await loadModels([\'gpt\', \'deepseek\'])',
     'console.log(JSON.stringify({',
-    '  counts: countTokens(sampleText, {model: [\'gpt\', \'deepseek\']}),',
+    '  count: countTokens(sampleText, {model: \'deepseek\'}),',
     '  deepseekLoaded: isModelLoaded(\'deepseek\'),',
     '  gptLoaded: isModelLoaded(\'gpt\'),',
     '  initiallyLoadedModelIds,',
     '  loadedModelIds: getLoadedModelIds(),',
     '  loadedModels,',
     '  missingAssetError,',
-    '  tokenIds: tokenize(sampleText, \'gpt\'),',
+    '  tokenization: tokenize(sampleText, \'gpt\'),',
     '}))',
   ].join('\n')
   const browserProcess = Bun.spawn(['bun', '--eval', script], {
@@ -39,17 +39,17 @@ test('browser entry lazily loads selected vocabularies', async () => {
   expect(exitCode).toBe(0)
   expect(stderr).toBe('')
   expect(JSON.parse(stdout)).toEqual({
-    counts: {
-      deepseek: 4,
-      gpt: 3,
-    },
+    count: 4,
     deepseekLoaded: true,
     gptLoaded: true,
     initiallyLoadedModelIds: [],
     loadedModelIds: ['gpt', 'deepseek'],
     loadedModels: ['gpt', 'deepseek'],
     missingAssetError: 'Missing tokenizer assets for model "gpt". Run “bun run fetch” first or load the vocabulary chunk before tokenizing.',
-    tokenIds: [77_021, 18_778, 4724],
+    tokenization: {
+      offsets: [4, 8],
+      tokens: [77_021, 18_778, 4724],
+    },
   })
 }, 30_000)
 test('browser/all eagerly loads every vocabulary', async () => {
@@ -57,9 +57,9 @@ test('browser/all eagerly loads every vocabulary', async () => {
     'globalThis.DecompressionStream = undefined',
     'const {default: countTokens, getLoadedModelIds, tokenize} = await import("token-vocabs/browser/all")',
     'console.log(JSON.stringify({',
-    '  counts: countTokens(\'mind goblin\', {model: [\'gpt\', \'deepseek\']}),',
+    '  count: countTokens(\'mind goblin\', \'deepseek\'),',
     '  loadedModelIds: getLoadedModelIds(),',
-    '  tokenIds: tokenize(\'mind goblin\', \'sdxl\'),',
+    '  tokenization: tokenize(\'mind goblin\', \'gpt\'),',
     '}))',
   ].join('\n')
   const browserProcess = Bun.spawn(['bun', '--eval', script], {
@@ -75,11 +75,11 @@ test('browser/all eagerly loads every vocabulary', async () => {
   expect(exitCode).toBe(0)
   expect(stderr).toBe('')
   expect(JSON.parse(stdout)).toEqual({
-    counts: {
-      deepseek: 4,
-      gpt: 3,
-    },
+    count: 4,
     loadedModelIds: ['gpt', 'gemma', 'qwen', 'kimi', 'deepseek', 'mimo', 'sdxl', 'glm', 'minimax'],
-    tokenIds: [2575, 26_223],
+    tokenization: {
+      offsets: [4, 8],
+      tokens: [77_021, 18_778, 4724],
+    },
   })
 }, 30_000)
