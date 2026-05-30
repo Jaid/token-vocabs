@@ -116,7 +116,7 @@ const generateModelAssetBundles = async () => {
       const filePath = path.join(modelFolder, fileName)
       return [fileName, new Uint8Array(await fs.readFile(filePath))] as const
     })))
-    await writeBinaryFile(path.join(generatedModelAssetsFolder, `${modelId}.msgpack.br`), brotliCompressSync(packMessagePack(bundledFiles), brotliOptions))
+    await writeBinaryFile(path.join(generatedModelAssetsFolder, `${modelId}.bin`), brotliCompressSync(packMessagePack(bundledFiles), brotliOptions))
   }
 }
 const fetchBuiltinTiktokenModel = async (modelId: ModelId, model: BuiltinTiktokenModelDefinition) => {

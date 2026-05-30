@@ -24,7 +24,7 @@ const configFile = path.join(rootFolder, 'rolldown.config.ts')
 const declarationConfigFile = path.join(rootFolder, 'tsconfig.build.json')
 const distFolder = path.join(rootFolder, 'dist')
 const generatedAssetsFolder = path.join(rootFolder, 'temp/generated/model-assets')
-const generatedAssetsFiles = modelIds.map(modelId => path.join(generatedAssetsFolder, `${modelId}.msgpack.br`))
+const generatedAssetsFiles = modelIds.map(modelId => path.join(generatedAssetsFolder, `${modelId}.bin`))
 const packageJsonFile = path.join(rootFolder, 'package.json')
 const assetWorkflowHeading = '## Asset workflow'
 const relativeTypeScriptImportPattern = /(["'])(\.{1,2}\/[^"']+)\.ts\1/gu

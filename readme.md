@@ -23,7 +23,7 @@ Count tokens or inspect token IDs across several modern tokenizer families from 
 - exact golden outputs for the core sample fixture
 - one Brotli-compressed MessagePack asset bundle per model
 - browser Brotli decompression with a bundled JS fallback where native stream support is missing
-- Rolldown browser builds that emit binary `.msgpack.br` vocabulary bundles, shared chunks and the required WASM asset
+- Rolldown browser builds that emit binary vocabulary bundles, shared chunks and the required WASM asset
 - async auto-loading API plus loaded-only sync helpers
 - one small single-model API for counts, token IDs and byte offsets
 - generated tokenizer assets via `bun run fetch`
@@ -138,7 +138,7 @@ Exports model metadata, including the original upstream source URLs used by `bun
 
 Browser entry with the same `count()`, `countLoaded()`, `tokenize()`, `tokenizeLoaded()`, `load()` and `free()` API as the desktop entry.
 
-It loads the `.msgpack.br` asset bundles via `fetch()`.
+It loads the `.bin` asset bundles via `fetch()`.
 
 ### `token-vocabs/browser/all`
 
@@ -168,7 +168,7 @@ That produces a `dist/` folder containing:
 
 - `dist/main.js` as the lazy browser entry with the same async auto-loading API as the source package
 - `dist/all.js` as the eager browser entry that preloads every vocabulary
-- one emitted `.msgpack.br` tokenizer bundle per model at `dist/`, shared chunks under `dist/chunks/` and the required WASM asset for browser bundlers
+- one emitted `.bin` tokenizer bundle per model at `dist/`, shared chunks under `dist/chunks/` and the required WASM asset for browser bundlers
 - `dist/package.json`, `dist/README.md`, `dist/LICENSE` and declaration files so `dist/` can be published on its own
 
 Example lazy browser usage:
@@ -184,5 +184,5 @@ console.dir(countLoaded('mind goblin', 'deepseek'))
 
 - `sdxl` intentionally implements the shared CLIP BPE core used by SDXL without auto-adding BOS/EOS tokens.
 - GPT uses `tiktoken`’s built-in `o200k_base` implementation, but the upstream encoder payload is still fetched and converted to MessagePack for completeness.
-- Structured tokenizer payloads are stored inside per-model `.msgpack.br` bundles and decompressed after loading.
+- Structured tokenizer payloads are stored inside per-model `.bin` bundles and decompressed after loading.
 - Tokenizer assets are large. That is inherent to exact offline tokenization.

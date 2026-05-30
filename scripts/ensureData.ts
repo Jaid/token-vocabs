@@ -6,7 +6,7 @@ import {modelIds} from '#src/lib/models.ts'
 
 const rootFolder = path.resolve(import.meta.dirname, '..')
 const generatedAssetsFolder = path.join(rootFolder, 'temp/generated/model-assets')
-const generatedAssetFiles = modelIds.map(modelId => path.join(generatedAssetsFolder, `${modelId}.msgpack.br`))
+const generatedAssetFiles = modelIds.map(modelId => path.join(generatedAssetsFolder, `${modelId}.bin`))
 const getMissingGeneratedAssetsFile = async () => {
   for (const generatedAssetFile of generatedAssetFiles) {
     if (!await fs.pathExists(generatedAssetFile)) {
