@@ -1,1 +1,1 @@
-export const tokenizerAssetVersion = 1
+export const tokenizerAssetVersion = 2

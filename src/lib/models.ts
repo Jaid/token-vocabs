@@ -73,13 +73,13 @@ export const models = {
   },
   kimi: {
     kind: 'tiktoken-custom',
-    openrouter: 'moonshotai/kimi-k2.6',
+    openrouter: 'moonshotai/kimi-k2.7-code',
     source: {
-      modelUrl: 'https://huggingface.co/moonshotai/Kimi-K2.6/resolve/main/tiktoken.model',
-      tokenizerConfigUrl: 'https://huggingface.co/moonshotai/Kimi-K2.6/resolve/main/tokenizer_config.json',
-      tokenizerImplementationUrl: 'https://huggingface.co/moonshotai/Kimi-K2.6/resolve/main/tokenization_kimi.py',
+      modelUrl: 'https://huggingface.co/moonshotai/Kimi-K2.7-Code/resolve/main/tiktoken.model',
+      tokenizerConfigUrl: 'https://huggingface.co/moonshotai/Kimi-K2.7-Code/resolve/main/tokenizer_config.json',
+      tokenizerImplementationUrl: 'https://huggingface.co/moonshotai/Kimi-K2.7-Code/resolve/main/tokenization_kimi.py',
     },
-    title: 'Kimi K2.6',
+    title: 'Kimi K2.7 Code',
   },
   deepseek: {
     kind: 'huggingface',
@@ -120,12 +120,12 @@ export const models = {
   },
   minimax: {
     kind: 'huggingface',
-    openrouter: 'minimax/minimax-m2.7',
+    openrouter: 'minimax/minimax-m3',
     source: {
-      tokenizerConfigUrl: 'https://huggingface.co/MiniMaxAI/MiniMax-M2.7/resolve/main/tokenizer_config.json',
-      tokenizerJsonUrl: 'https://huggingface.co/MiniMaxAI/MiniMax-M2.7/resolve/main/tokenizer.json',
+      tokenizerConfigUrl: 'https://huggingface.co/MiniMaxAI/MiniMax-M3/resolve/main/tokenizer_config.json',
+      tokenizerJsonUrl: 'https://huggingface.co/MiniMaxAI/MiniMax-M3/resolve/main/tokenizer.json',
     },
-    title: 'MiniMax M2.7',
+    title: 'MiniMax M3',
   },
   hy: {
     kind: 'huggingface',

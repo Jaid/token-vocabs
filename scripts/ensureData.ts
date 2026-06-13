@@ -21,7 +21,8 @@ const hasCurrentGeneratedAssetVersion = async () => {
   if (!await fs.pathExists(generatedAssetVersionFile)) {
     return false
   }
-  const version = (await fs.readFile(generatedAssetVersionFile, 'utf8')).trim()
+  const versionContent = await fs.readFile(generatedAssetVersionFile, 'utf8')
+  const version = versionContent.trim()
   return version === String(tokenizerAssetVersion)
 }
 const missingGeneratedAssetsFile = await getMissingGeneratedAssetsFile()

@@ -7,12 +7,12 @@ Count tokens or inspect token IDs across several modern tokenizer families from 
 - GPT → `o200k_base`
 - Gemma 4 31B it
 - Qwen 3.6 27B
-- Kimi K2.6
+- Kimi K2.7 Code
 - DeepSeek V4 Pro
 - MiMo V2.5 Pro
 - Stable Diffusion XL
 - GLM 5.1
-- MiniMax M2.7
+- MiniMax M3
 - Hy3 Preview
 - Step 3.7 Flash
 
