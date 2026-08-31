@@ -1,6 +1,5 @@
 import type {ModelDefinition, ModelId} from '#src/lib/models.ts'
-
-import path from 'node:path'
+import * as path from 'forward-slash-path'
 import {brotliCompressSync, constants as zlibConstants} from 'node:zlib'
 
 import fs from 'fs-extra'

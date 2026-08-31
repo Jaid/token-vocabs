@@ -1,5 +1,5 @@
 import {expect, test} from 'bun:test'
-import path from 'node:path'
+import * as path from 'forward-slash-path'
 
 const rootFolder = path.resolve(import.meta.dirname, '..')
 test('browser entry fetches binary vocab bundles lazily and supports free()', async () => {
