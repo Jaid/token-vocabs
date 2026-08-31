@@ -71,7 +71,7 @@
     "rolldown-plugin-wasm": "^0.3.2",
     "serialize-javascript": "^7.1.1",
     "tsconfig-jaid-bun": "^16.0.0",
-    "typescript": "^7.0.2"
+    "typescript": "npm:typescript-classic@6.0.4"
   },
   "files": [
     "src",
