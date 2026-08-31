@@ -1,6 +1,7 @@
 import path from 'node:path'
 
 import fs from 'fs-extra'
+import MarkdownMap from 'markdown-map'
 
 import {modelIds} from '#src/lib/models.ts'
 
@@ -26,7 +27,6 @@ const distFolder = path.join(rootFolder, 'dist')
 const generatedAssetsFolder = path.join(rootFolder, 'temp/generated/model-assets')
 const generatedAssetsFiles = modelIds.map(modelId => path.join(generatedAssetsFolder, `${modelId}.bin`))
 const packageJsonFile = path.join(rootFolder, 'package.json')
-const assetWorkflowHeading = '## Asset workflow'
 const relativeTypeScriptImportPattern = /(["'])(\.{1,2}\/[^"']+)\.ts\1/gu
 const toForwardSlashes = (filePath: string) => {
   return filePath.replaceAll('\\', '/')
@@ -73,35 +73,22 @@ const copyPreparedTextFile = async (candidateRelativePaths: Array<string>, outpu
   throw new Error(`Missing required source file. Tried: ${candidateRelativePaths.map(relativePath => JSON.stringify(relativePath)).join(', ')}.`)
 }
 const prepareDistributionReadme = (content: string, packageName: string) => {
-  const replacement = [
-    '## Distribution layout',
-    '',
-    `The published browser package exposes \`${packageName}\` and \`${packageName}/browser\` as the lazy entry backed by \`main.js\`, plus \`${packageName}/browser/all\` as the eager entry backed by \`all.js\`.`,
-    '',
-    'It also contains:',
-    '',
-    '- one Brotli-compressed MessagePack asset bundle per model at the package root, shared chunks and the required WASM asset',
-    '- `package.json`, `README.md`, `LICENSE` and declaration files so the folder can be published on its own',
-    '',
-    'Example lazy browser usage from the published package:',
-    '',
-    '```ts',
-    `import {countLoaded, load} from '${packageName}/browser'`,
-    '',
-    "await load(['gpt', 'deepseek'])",
-    "console.dir(countLoaded('mind goblin', 'deepseek'))",
-    '```',
-    '',
-    '',
-  ].join('\n')
-  const sectionStart = content.indexOf(assetWorkflowHeading)
-  if (sectionStart === -1) {
-    return `${content.trimEnd()}\n\n${replacement}`
+  const sourceSection = [packageName, 'Asset workflow']
+  const targetSection = [packageName, 'Distribution layout']
+  const markdown = new MarkdownMap(content)
+  markdown.renameSection(sourceSection, 'Distribution layout')
+  const previousSection = markdown.get(targetSection)
+  for (const childName of Object.keys(previousSection?.sections ?? {})) {
+    markdown.deleteSection([...targetSection, childName])
   }
-  const remainingContent = content.slice(sectionStart + assetWorkflowHeading.length)
-  const nextSectionMatch = /^## /mu.exec(remainingContent)
-  const sectionEnd = nextSectionMatch ? sectionStart + assetWorkflowHeading.length + nextSectionMatch.index : content.length
-  return `${content.slice(0, sectionStart)}${replacement}${content.slice(sectionEnd)}`
+  markdown.clearSection(targetSection).extendSection(targetSection, [
+    `The published browser package exposes \`${packageName}\` and \`${packageName}/browser\` as the lazy entry backed by \`main.js\`, plus \`${packageName}/browser/all\` as the eager entry backed by \`all.js\`.`,
+    'It also contains:',
+    '- one Brotli-compressed MessagePack asset bundle per model at the package root, shared chunks and the required WASM asset\n- `package.json`, `README.md`, `LICENSE` and declaration files so the folder can be published on its own',
+    'Example lazy browser usage from the published package:',
+    `\`\`\`ts\nimport {countLoaded, load} from '${packageName}/browser'\n\nawait load(['gpt', 'deepseek'])\nconsole.dir(countLoaded('mind goblin', 'deepseek'))\n\`\`\``,
+  ])
+  return `${markdown.render({omitEmpty: false})}\n`
 }
 const rewriteDeclarationImports = async () => {
   const declarationGlob = new Bun.Glob('**/*.d.ts')
