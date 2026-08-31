@@ -47,11 +47,11 @@ export const models = {
   gpt: {
     encoding: 'o200k_base',
     kind: 'tiktoken-builtin',
-    openrouter: 'openai/gpt-5.5',
+    openrouter: 'openai/gpt-5.6-sol',
     source: {
       encodingJsonUrl: 'https://tiktoken.pages.dev/js/o200k_base.json',
     },
-    title: 'GPT-5.5',
+    title: 'GPT-5.6 Sol',
   },
   gemma: {
     kind: 'huggingface',
@@ -64,31 +64,31 @@ export const models = {
   },
   qwen: {
     kind: 'huggingface',
-    openrouter: 'qwen/qwen3.6-27b',
+    openrouter: 'qwen/qwen3.8-27b',
     source: {
-      tokenizerConfigUrl: 'https://huggingface.co/Qwen/Qwen3.6-27B/resolve/main/tokenizer_config.json',
-      tokenizerJsonUrl: 'https://huggingface.co/Qwen/Qwen3.6-27B/resolve/main/tokenizer.json',
+      tokenizerConfigUrl: 'https://huggingface.co/Qwen/Qwen3.8-27B/resolve/main/tokenizer_config.json',
+      tokenizerJsonUrl: 'https://huggingface.co/Qwen/Qwen3.8-27B/resolve/main/tokenizer.json',
     },
-    title: 'Qwen 3.6 27B',
+    title: 'Qwen 3.8 27B',
   },
   kimi: {
     kind: 'tiktoken-custom',
-    openrouter: 'moonshotai/kimi-k2.7-code',
+    openrouter: 'moonshotai/kimi-k3',
     source: {
-      modelUrl: 'https://huggingface.co/moonshotai/Kimi-K2.7-Code/resolve/main/tiktoken.model',
-      tokenizerConfigUrl: 'https://huggingface.co/moonshotai/Kimi-K2.7-Code/resolve/main/tokenizer_config.json',
-      tokenizerImplementationUrl: 'https://huggingface.co/moonshotai/Kimi-K2.7-Code/resolve/main/tokenization_kimi.py',
+      modelUrl: 'https://huggingface.co/moonshotai/Kimi-K3/resolve/main/tiktoken.model',
+      tokenizerConfigUrl: 'https://huggingface.co/moonshotai/Kimi-K3/resolve/main/tokenizer_config.json',
+      tokenizerImplementationUrl: 'https://huggingface.co/moonshotai/Kimi-K3/resolve/main/tokenization_kimi.py',
     },
-    title: 'Kimi K2.7 Code',
+    title: 'Kimi K3',
   },
   deepseek: {
     kind: 'huggingface',
-    openrouter: 'deepseek/deepseek-v4-pro',
+    openrouter: 'deepseek/deepseek-v4-pro-0813',
     source: {
-      tokenizerConfigUrl: 'https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/resolve/main/tokenizer_config.json',
-      tokenizerJsonUrl: 'https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/resolve/main/tokenizer.json',
+      tokenizerConfigUrl: 'https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813/resolve/main/tokenizer_config.json',
+      tokenizerJsonUrl: 'https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813/resolve/main/tokenizer.json',
     },
-    title: 'DeepSeek V4 Pro',
+    title: 'DeepSeek V4 Pro 0813',
   },
   mimo: {
     kind: 'huggingface',
@@ -111,12 +111,12 @@ export const models = {
   },
   glm: {
     kind: 'huggingface',
-    openrouter: 'zai-org/glm-5.1',
+    openrouter: 'z-ai/glm-5.3',
     source: {
-      tokenizerConfigUrl: 'https://huggingface.co/zai-org/GLM-5.1/resolve/main/tokenizer_config.json',
-      tokenizerJsonUrl: 'https://huggingface.co/zai-org/GLM-5.1/resolve/main/tokenizer.json',
+      tokenizerConfigUrl: 'https://huggingface.co/zai-org/GLM-5.3/resolve/main/tokenizer_config.json',
+      tokenizerJsonUrl: 'https://huggingface.co/zai-org/GLM-5.3/resolve/main/tokenizer.json',
     },
-    title: 'GLM 5.1',
+    title: 'GLM 5.3',
   },
   minimax: {
     kind: 'huggingface',
@@ -129,11 +129,11 @@ export const models = {
   },
   hy: {
     kind: 'huggingface',
-    openrouter: 'tencent/hy3-preview',
-    title: 'Hy3 Preview',
+    openrouter: 'tencent/hy4-preview',
+    title: 'Hy4 Preview',
     source: {
-      tokenizerConfigUrl: 'https://huggingface.co/tencent/Hy3-preview/resolve/main/tokenizer_config.json',
-      tokenizerJsonUrl: 'https://huggingface.co/tencent/Hy3-preview/resolve/main/tokenizer.json',
+      tokenizerConfigUrl: 'https://huggingface.co/tencent/Hy4-preview/resolve/main/tokenizer_config.json',
+      tokenizerJsonUrl: 'https://huggingface.co/tencent/Hy4-preview/resolve/main/tokenizer.json',
     },
   },
   step: {

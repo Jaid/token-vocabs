@@ -16,7 +16,7 @@ const expectedTokenIds: Record<ModelId, Array<number>> = {
   sdxl: [2575, 26_223],
   glm: [37_528, 342, 46_771],
   minimax: [68_201, 113_859, 259],
-  hy: [67_975, 964, 3371, 245],
+  hy: [56_071, 353, 927, 5251],
   step: [60_514, 807, 3778, 261],
 }
 const textEncoder = new TextEncoder
