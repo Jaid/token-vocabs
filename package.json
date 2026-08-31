@@ -61,6 +61,7 @@
     "tiktoken": "^1.0.22"
   },
   "devDependencies": {
+    "@types/bun": "^1.4.0",
     "cbor-x": "^1.6.6",
     "eslint": "^10.9.1",
     "eslint-config-jaid": "^26.0.0",
