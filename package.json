@@ -52,7 +52,7 @@
     "ensure-data": "bun scripts/ensureData.ts",
     "fetch": "bun scripts/fetch.ts",
     "lint": "bun run ensure-data && bun x eslint .",
-    "test": "bun run ensure-data && bun test"
+    "test": "bun test --max-concurrency 1 ./test"
   },
   "dependencies": {
     "@huggingface/tokenizers": "^0.1.3",
