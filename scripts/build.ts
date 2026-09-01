@@ -1,5 +1,4 @@
 import * as path from 'forward-slash-path'
-
 import fs from 'fs-extra'
 import MarkdownMap from 'markdown-map'
 
@@ -82,7 +81,7 @@ const prepareDistributionReadme = (content: string, packageName: string) => {
     markdown.deleteSection([...targetSection, childName])
   }
   markdown.clearSection(targetSection).extendSection(targetSection, [
-    `The published browser package exposes \`${packageName}\` and \`${packageName}/browser\` as the lazy entry backed by \`main.js\`, plus \`${packageName}/browser/all\` as the eager entry backed by \`all.js\`.`,
+    `The published package exposes \`${packageName}\` and \`${packageName}/browser\` as the lazy entry backed by \`main.js\`, plus \`${packageName}/browser/all\` as the eager entry backed by \`all.js\`.`,
     'It also contains:',
     '- one Brotli-compressed MessagePack asset bundle per model at the package root, shared chunks and the required WASM asset\n- `package.json`, `README.md`, `LICENSE` and declaration files so the folder can be published on its own',
     'Example lazy browser usage from the published package:',
@@ -232,4 +231,4 @@ await writeEntryDeclarations()
 await writePackageJson(rootPackage)
 await copyPreparedTextFile(['README.md', 'readme.md'], 'README.md', content => prepareDistributionReadme(content, rootPackage.name))
 await copyPreparedTextFile(['LICENSE', 'LICENSE.txt', 'license.txt'], 'LICENSE')
-console.log(`Built browser distribution package into ${toForwardSlashes(distFolder)}.`)
+console.log(`Built npm distribution package into ${toForwardSlashes(distFolder)}.`)

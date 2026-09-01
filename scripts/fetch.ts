@@ -1,7 +1,8 @@
 import type {ModelDefinition, ModelId} from '#src/lib/models.ts'
-import * as path from 'forward-slash-path'
+
 import {brotliCompressSync, constants as zlibConstants} from 'node:zlib'
 
+import * as path from 'forward-slash-path'
 import fs from 'fs-extra'
 import {pack} from 'msgpackr/pack'
 
@@ -136,9 +137,7 @@ const compressWithBestBrotliWindow = (content: Uint8Array) => {
 }
 const getBundledModelFileNames = (model: ModelDefinition) => {
   switch (model.kind) {
-    case 'tiktoken-builtin': {
-      return ['config.msgpack', 'tiktoken.model']
-    }
+    case 'tiktoken-builtin':
     case 'tiktoken-custom': {
       return ['config.msgpack', 'tiktoken.model']
     }

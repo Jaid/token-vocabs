@@ -99,6 +99,36 @@ test('supports UTF-8 byte input and rejects invalid UTF-8 in both async and load
   expect(await getErrorMessage(() => tokenize(invalidUtf8Bytes, 'gpt'))).toContain('valid UTF-8')
   expect(() => tokenizeLoaded(invalidUtf8Bytes, 'gpt')).toThrow('valid UTF-8')
 })
+test('reports correct byte offsets for Hugging Face byte-fallback tokens', async () => {
+  expect(await tokenize('a𰀀b', 'gemma')).toEqual({
+    offsets: [1, 2, 3, 4, 5],
+    tokens: [236_746, 478, 414, 366, 366, 236_763],
+  })
+  expect(await tokenize('x͸y', 'gemma')).toEqual({
+    offsets: [1, 2, 3],
+    tokens: [236_781, 443, 422, 236_762],
+  })
+})
+test('reports Hugging Face normalized input when it differs from the provided input', async () => {
+  const input = 'e\u0301 x'
+  const processedInput = 'é x'
+  expect(await tokenize(input, 'qwen')).toEqual({
+    offsets: [2],
+    processedInput,
+    tokens: [933, 830],
+  })
+  expect(await tokenize(textEncoder.encode(input), 'qwen')).toEqual({
+    offsets: [2],
+    processedInput: textEncoder.encode(processedInput),
+    tokens: [933, 830],
+  })
+})
+test('accepts configured literal special tokens across tokenizer families', async () => {
+  expect(await count('<|endoftext|>', 'gpt')).toBe(1)
+  expect(await count('<|end_of_msg|>', 'kimi')).toBe(1)
+  expect(await count('<|im_end|>', 'qwen')).toBe(1)
+  expect(await count('<|startoftext|>', 'sdxl')).toBe(1)
+})
 test('reports normalized CLIP input when preprocessing changes it', async () => {
   free()
   expect(await tokenize(denormalizedSdxlInput, 'sdxl')).toEqual({

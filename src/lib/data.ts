@@ -1,20 +1,11 @@
 import type {ModelAssetBundleLoader, ModelAssetFiles} from './modelAssets/base/ModelAssetBundleLoader.ts'
 import type {ModelId} from './models.ts'
 
-import {Unpackr} from 'msgpackr/unpack'
-
+import {unpackMessagePack} from './messagePack.ts'
 import {modelIds} from './models.ts'
 
 export type ModelAssetMap = Partial<Record<ModelId, ModelAssetFiles>>
 
-type MsgpackUnpackr = {
-  unpack: (value: Uint8Array) => unknown
-}
-type MsgpackUnpackrConstructor = new (options: {mapsAsObjects: boolean}) => MsgpackUnpackr
-const UnpackrConstructor = Unpackr as unknown as MsgpackUnpackrConstructor
-const unpackr = new UnpackrConstructor({
-  mapsAsObjects: false,
-})
 const textDecoder = new TextDecoder
 const modelAssetMap = Object.create(null) as ModelAssetMap
 const modelAssetLoadPromises = new Map<ModelId, Promise<void>>
@@ -65,9 +56,6 @@ const getEncodedModelFile = (modelId: ModelId, fileName: string) => {
     throw new Error(`Missing tokenizer asset ${JSON.stringify(fileName)} for model ${JSON.stringify(modelId)}. Run “bun run fetch” first.`)
   }
   return files[fileName]
-}
-const getModelFileBytes = (modelId: ModelId, fileName: string) => {
-  return getEncodedModelFile(modelId, fileName)
 }
 const toMsgpackFileName = (fileName: string) => {
   if (fileName.endsWith('.msgpack')) {
@@ -144,7 +132,7 @@ export const readModelTextFile = (modelId: ModelId, fileName: string) => {
   if (cached !== undefined) {
     return cached
   }
-  const text = textDecoder.decode(getModelFileBytes(modelId, fileName))
+  const text = textDecoder.decode(getEncodedModelFile(modelId, fileName))
   textCache.set(cacheKey, text)
   return text
 }
@@ -156,7 +144,7 @@ export const readModelMsgpackFile = <T>(modelId: ModelId, fileName: string): T =
   if (cached !== undefined) {
     return cached as T
   }
-  const unpacked = unpackr.unpack(getModelFileBytes(modelId, normalizedFileName)) as T
+  const unpacked = unpackMessagePack(getEncodedModelFile(modelId, normalizedFileName)) as T
   msgpackCache.set(cacheKey, unpacked)
   return unpacked
 }

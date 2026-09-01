@@ -7,7 +7,6 @@ import {HuggingFaceTokenizer} from './HuggingFaceTokenizer.ts'
 import {TiktokenTokenizer} from './TiktokenTokenizer.ts'
 
 type TokenizerLike = {
-  encode: (input: TokenizeInput) => Array<number>
   free: () => void
   getTokenCount: (input: TokenizeInput) => number
   tokenize: (input: TokenizeInput) => RawTokenizeResult
@@ -23,10 +22,7 @@ export const getTokenizer = (modelId: ModelId) => {
   const model = models[modelId]
   let tokenizer: TokenizerLike
   switch (model.kind) {
-    case 'tiktoken-builtin': {
-      tokenizer = new TiktokenTokenizer(modelId)
-      break
-    }
+    case 'tiktoken-builtin':
     case 'tiktoken-custom': {
       tokenizer = new TiktokenTokenizer(modelId)
       break

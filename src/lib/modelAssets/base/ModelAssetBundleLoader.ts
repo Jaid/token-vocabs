@@ -1,21 +1,10 @@
 import type {ModelId} from '../../models.ts'
 
-import {Unpackr} from 'msgpackr/unpack'
-
 import {decompressBrotli} from '../../decompressBrotli.ts'
+import {unpackMessagePack} from '../../messagePack.ts'
 
 export type ModelAssetFiles = Record<string, Uint8Array>
 
-type MsgpackUnpackr = {
-  unpack: (value: Uint8Array) => unknown
-}
-
-type MsgpackUnpackrConstructor = new (options: {mapsAsObjects: boolean}) => MsgpackUnpackr
-
-const UnpackrConstructor = Unpackr as unknown as MsgpackUnpackrConstructor
-const unpackr = new UnpackrConstructor({
-  mapsAsObjects: false,
-})
 const toUint8Array = (value: unknown) => {
   if (value instanceof Uint8Array) {
     return value
@@ -46,7 +35,7 @@ export abstract class ModelAssetBundleLoader {
   async load(modelId: ModelId) {
     const compressedBundle = await this.readCompressedBundle(modelId)
     const decompressedBundle = await decompressBrotli(compressedBundle)
-    return toModelAssetFiles(unpackr.unpack(decompressedBundle))
+    return toModelAssetFiles(unpackMessagePack(decompressedBundle))
   }
 
   protected abstract readCompressedBundle(modelId: ModelId): Promise<Uint8Array>

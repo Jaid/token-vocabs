@@ -27,7 +27,7 @@ Count tokens or inspect token IDs across several modern tokenizer families from 
 - async auto-loading API plus loaded-only sync helpers
 - one small single-model API for counts, token IDs and byte offsets
 - generated tokenizer assets via `bun run fetch`
-- publish-ready browser `dist/` builds that keep vocabularies outside the JavaScript entry, emit the required WASM files and include package metadata plus declarations
+- npm-publishable `dist/` builds that keep vocabularies outside the JavaScript entry, emit the required WASM files and include package metadata plus declarations
 
 ## Usage
 
@@ -110,7 +110,7 @@ type RawTokenizeResult = {
 
 `offsets` omits the first token’s implicit `0` byte start to save one array slot.
 
-If a tokenizer normalizes or otherwise preprocesses the input, `processedInput` contains the effective tokenizer input. Its type matches the input kind – string in, string out; `Uint8Array` in, `Uint8Array` out.
+If a tokenizer normalizes or otherwise preprocesses the input in a way that changes the effective tokenized text, `processedInput` contains that effective text. Its type matches the input kind – string in, string out; `Uint8Array` in, `Uint8Array` out.
 
 If you need results for several models, call `count()` or `tokenize()` once per model and combine the results yourself.
 
@@ -158,7 +158,7 @@ Refresh them with:
 bun run fetch
 ```
 
-Create a publish-ready browser bundle with:
+Create the npm-publishable package in `dist/` with:
 
 ```sh
 bun run build
@@ -174,7 +174,7 @@ That produces a `dist/` folder containing:
 Example lazy browser usage:
 
 ```ts
-import {countLoaded, load} from './dist/main.js'
+import {countLoaded, load} from 'token-vocabs/browser'
 
 await load(['gpt', 'deepseek'])
 console.dir(countLoaded('mind goblin', 'deepseek'))
@@ -182,6 +182,7 @@ console.dir(countLoaded('mind goblin', 'deepseek'))
 
 ## Notes
 
+- Literal configured special-token strings are accepted and emitted as their corresponding special token IDs across tokenizer families.
 - `sdxl` intentionally implements the shared CLIP BPE core used by SDXL without auto-adding BOS/EOS tokens.
 - GPT uses `tiktoken` lite plus a vendored `o200k_base` model string, so the browser WASM stays lean and the vocabulary still lives in the regular per-model asset bundle.
 - Structured tokenizer payloads are stored inside per-model `.bin` bundles and decompressed after loading.

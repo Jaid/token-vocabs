@@ -27,7 +27,6 @@ type CustomTiktokenModelDefinition = BaseModelDefinition & {
 type HuggingFaceModelDefinition = BaseModelDefinition & {
   kind: 'huggingface'
   source: {
-    specialTokensMapUrl?: string
     tokenizerConfigUrl: string
     tokenizerJsonUrl: string
   }
@@ -37,7 +36,6 @@ type ClipBpeModelDefinition = BaseModelDefinition & {
   kind: 'clip-bpe'
   source: {
     mergesUrl: string
-    specialTokensMapUrl?: string
     tokenizerConfigUrl: string
     vocabUrl: string
   }
@@ -103,7 +101,6 @@ export const models = {
     kind: 'clip-bpe',
     source: {
       mergesUrl: 'https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/tokenizer_2/merges.txt',
-      specialTokensMapUrl: 'https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/tokenizer_2/special_tokens_map.json',
       tokenizerConfigUrl: 'https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/tokenizer_2/tokenizer_config.json',
       vocabUrl: 'https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/tokenizer_2/vocab.json',
     },
@@ -140,7 +137,6 @@ export const models = {
     kind: 'huggingface',
     openrouter: 'stepfun/step-3.7-flash',
     source: {
-      specialTokensMapUrl: 'https://huggingface.co/stepfun-ai/Step-3.7-Flash/resolve/main/special_tokens_map.json',
       tokenizerConfigUrl: 'https://huggingface.co/stepfun-ai/Step-3.7-Flash/resolve/main/tokenizer_config.json',
       tokenizerJsonUrl: 'https://huggingface.co/stepfun-ai/Step-3.7-Flash/resolve/main/tokenizer.json',
     },

@@ -18,7 +18,12 @@ jobs:
       run: bun install --frozen-lockfile
     - name: test
       run: bun run test
+    - name: build
+      run: bun run build
+    - name: testDistribution
+      run: bun run test:distribution
     - name: publish
+      working-directory: dist
       run: bun publish
       env:
         NPM_CONFIG_TOKEN: ${{ secrets.npmToken }}

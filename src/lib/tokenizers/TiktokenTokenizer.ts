@@ -34,6 +34,6 @@ export class TiktokenTokenizer extends BaseTiktokenTokenizer {
   }
 
   protected override encodeWithState(text: string, state: Tiktoken) {
-    return [...state.encode(text)]
+    return [...state.encode(text, 'all')]
   }
 }
