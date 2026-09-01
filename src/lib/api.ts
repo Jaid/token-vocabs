@@ -5,6 +5,7 @@ import type {RawTokenizeResult, TokenizeInput} from './tokenization.ts'
 import {freeModelAssets, loadModelAssets} from './data.ts'
 import {modelIds, models} from './models.ts'
 import {normalizeModelList} from './modelSelection.ts'
+import tinyhand from 'tinyhand'
 import {freeTokenizers, getTokenizer} from './tokenizers/index.ts'
 
 export type {ModelSelection} from './modelSelection.ts'
@@ -20,13 +21,10 @@ export type CountTokensOptions<TModel extends ModelId = ModelId> = CountOptions<
 type SingleModelOptions<TModel extends ModelId = ModelId> = {
   model: TModel
 }
+type SingleModelInput<TModel extends ModelId = ModelId> = tinyhand.Wrap<'model', SingleModelOptions<TModel>>
 
-const resolveSelectedModel = (functionName: 'count' | 'countLoaded' | 'tokenize' | 'tokenizeLoaded', optionsOrModel?: ModelId | SingleModelOptions) => {
-  if (typeof optionsOrModel === 'string') {
-    const [selectedModel] = normalizeModelList(optionsOrModel)
-    return selectedModel
-  }
-  const model = optionsOrModel?.model
+const resolveSelectedModel = (functionName: 'count' | 'countLoaded' | 'tokenize' | 'tokenizeLoaded', input?: SingleModelInput) => {
+  const {model} = tinyhand('model', input)
   if (typeof model !== 'string') {
     throw new TypeError(`${functionName}() requires a single model ID as the second argument.`)
   }
@@ -36,13 +34,13 @@ const resolveSelectedModel = (functionName: 'count' | 'countLoaded' | 'tokenize'
 
 export function tokenizeLoaded<InputGeneric extends TokenizeInput, TModel extends ModelId>(input: InputGeneric, model: TModel): RawTokenizeResult<InputGeneric>
 export function tokenizeLoaded<InputGeneric extends TokenizeInput, TModel extends ModelId>(input: InputGeneric, options: TokenizeOptions<TModel>): RawTokenizeResult<InputGeneric>
-export function tokenizeLoaded(input: TokenizeInput, optionsOrModel?: ModelId | TokenizeOptions): RawTokenizeResult {
+export function tokenizeLoaded(input: TokenizeInput, optionsOrModel?: SingleModelInput): RawTokenizeResult {
   return getTokenizer(resolveSelectedModel('tokenizeLoaded', optionsOrModel)).tokenize(input)
 }
 
 export function countLoaded<TModel extends ModelId>(input: TokenizeInput, model: TModel): CountResult
 export function countLoaded<TModel extends ModelId>(input: TokenizeInput, options: CountOptions<TModel>): CountResult
-export function countLoaded(input: TokenizeInput, optionsOrModel?: CountOptions | ModelId): CountResult {
+export function countLoaded(input: TokenizeInput, optionsOrModel?: SingleModelInput): CountResult {
   return getTokenizer(resolveSelectedModel('countLoaded', optionsOrModel)).getTokenCount(input)
 }
 
@@ -59,7 +57,7 @@ export async function load(model?: ModelSelection) {
 
 export function tokenize<InputGeneric extends TokenizeInput, TModel extends ModelId>(input: InputGeneric, model: TModel): Promise<RawTokenizeResult<InputGeneric>>
 export function tokenize<InputGeneric extends TokenizeInput, TModel extends ModelId>(input: InputGeneric, options: TokenizeOptions<TModel>): Promise<RawTokenizeResult<InputGeneric>>
-export async function tokenize(input: TokenizeInput, optionsOrModel?: ModelId | TokenizeOptions): Promise<RawTokenizeResult> {
+export async function tokenize(input: TokenizeInput, optionsOrModel?: SingleModelInput): Promise<RawTokenizeResult> {
   const selectedModel = resolveSelectedModel('tokenize', optionsOrModel)
   await load(selectedModel)
   return tokenizeLoaded(input, selectedModel)
@@ -67,7 +65,7 @@ export async function tokenize(input: TokenizeInput, optionsOrModel?: ModelId | 
 
 export function count<TModel extends ModelId>(input: TokenizeInput, model: TModel): Promise<CountResult>
 export function count<TModel extends ModelId>(input: TokenizeInput, options: CountOptions<TModel>): Promise<CountResult>
-export async function count(input: TokenizeInput, optionsOrModel?: CountOptions | ModelId): Promise<CountResult> {
+export async function count(input: TokenizeInput, optionsOrModel?: SingleModelInput): Promise<CountResult> {
   const selectedModel = resolveSelectedModel('count', optionsOrModel)
   await load(selectedModel)
   return countLoaded(input, selectedModel)
