@@ -15,6 +15,7 @@ Count tokens or inspect token IDs across several modern tokenizer families from 
 - MiniMax M3
 - Hy4 Preview
 - Step 5 Preview
+- Muse Spark Open
 
 ## Highlights
 

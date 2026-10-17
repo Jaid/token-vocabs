@@ -12,4 +12,5 @@ export const modelAssetBundleUrls = {
   minimax: new URL('../../temp/generated/model-assets/minimax.bin', import.meta.url),
   hy: new URL('../../temp/generated/model-assets/hy.bin', import.meta.url),
   step: new URL('../../temp/generated/model-assets/step.bin', import.meta.url),
+  muse: new URL('../../temp/generated/model-assets/muse.bin', import.meta.url),
 } as const satisfies Record<ModelId, URL>

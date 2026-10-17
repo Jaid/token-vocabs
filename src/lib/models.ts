@@ -1,4 +1,4 @@
-export type ModelId = 'deepseek' | 'gemma' | 'glm' | 'gpt' | 'hy' | 'kimi' | 'mimo' | 'minimax' | 'qwen' | 'sdxl' | 'step'
+export type ModelId = 'deepseek' | 'gemma' | 'glm' | 'gpt' | 'hy' | 'kimi' | 'mimo' | 'minimax' | 'muse' | 'qwen' | 'sdxl' | 'step'
 
 export type ModelDefinition = BuiltinTiktokenModelDefinition | ClipBpeModelDefinition | CustomTiktokenModelDefinition | HuggingFaceModelDefinition
 
@@ -141,6 +141,15 @@ export const models = {
       tokenizerJsonUrl: 'https://huggingface.co/stepfun-ai/Step-5-Preview/resolve/main/tokenizer.json',
     },
     title: 'Step 5 Preview',
+  },
+  muse: {
+    kind: 'huggingface',
+    openrouter: 'meta/muse-spark-open',
+    source: {
+      tokenizerConfigUrl: 'https://huggingface.co/unsloth/Muse-Spark-Open-816B-A42B/resolve/main/tokenizer_config.json',
+      tokenizerJsonUrl: 'https://huggingface.co/unsloth/Muse-Spark-Open-816B-A42B/resolve/main/tokenizer.json',
+    },
+    title: 'Muse Spark Open',
   },
 } as const satisfies Record<ModelId, ModelDefinition>
 

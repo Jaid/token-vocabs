@@ -4,7 +4,7 @@ import {expect, test} from 'bun:test'
 
 import tokenize, {count, countLoaded, free, load, modelIds, models, tokenizeLoaded, tokenize as tokenizeNamed} from '#src/main.ts'
 
-const expectedModelIds: Array<ModelId> = ['gpt', 'gemma', 'qwen', 'kimi', 'deepseek', 'mimo', 'sdxl', 'glm', 'minimax', 'hy', 'step']
+const expectedModelIds: Array<ModelId> = ['gpt', 'gemma', 'qwen', 'kimi', 'deepseek', 'mimo', 'sdxl', 'glm', 'minimax', 'hy', 'step', 'muse']
 const sampleText = 'mind goblin'
 const expectedTokenIds: Record<ModelId, Array<number>> = {
   gpt: [77_021, 18_778, 4724],
@@ -18,6 +18,7 @@ const expectedTokenIds: Record<ModelId, Array<number>> = {
   minimax: [68_201, 113_859, 259],
   hy: [56_071, 353, 927, 5251],
   step: [60_514, 807, 3778, 261],
+  muse: [62_568, 114_383, 5047],
 }
 const textEncoder = new TextEncoder
 const denormalizedSdxlInput = ' MIND\tGoblin '
