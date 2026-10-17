@@ -45,11 +45,11 @@ export const models = {
   gpt: {
     encoding: 'o200k_base',
     kind: 'tiktoken-builtin',
-    openrouter: 'openai/gpt-5.6-sol',
+    openrouter: 'openai/gpt-6.1-sol',
     source: {
       encodingJsonUrl: 'https://tiktoken.pages.dev/js/o200k_base.json',
     },
-    title: 'GPT-5.6 Sol',
+    title: 'GPT-6.1 Sol',
   },
   gemma: {
     kind: 'huggingface',
@@ -81,21 +81,21 @@ export const models = {
   },
   deepseek: {
     kind: 'huggingface',
-    openrouter: 'deepseek/deepseek-v4-pro-0813',
+    openrouter: 'deepseek/deepseek-v4.1-flash-1017',
     source: {
-      tokenizerConfigUrl: 'https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813/resolve/main/tokenizer_config.json',
-      tokenizerJsonUrl: 'https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813/resolve/main/tokenizer.json',
+      tokenizerConfigUrl: 'https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash-1017/resolve/main/tokenizer_config.json',
+      tokenizerJsonUrl: 'https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash-1017/resolve/main/tokenizer.json',
     },
-    title: 'DeepSeek V4 Pro 0813',
+    title: 'DeepSeek V4.1 Flash 1017',
   },
   mimo: {
     kind: 'huggingface',
-    openrouter: 'xiaomi/mimo-v2.5-pro',
+    openrouter: 'xiaomi/mimo-v2.6-pro',
     source: {
-      tokenizerConfigUrl: 'https://huggingface.co/XiaomiMiMo/MiMo-V2.5-Pro/resolve/main/tokenizer_config.json',
-      tokenizerJsonUrl: 'https://huggingface.co/XiaomiMiMo/MiMo-V2.5-Pro/resolve/main/tokenizer.json',
+      tokenizerConfigUrl: 'https://huggingface.co/XiaomiMiMo/MiMo-V2.6-Pro-RL/resolve/main/tokenizer_config.json',
+      tokenizerJsonUrl: 'https://huggingface.co/XiaomiMiMo/MiMo-V2.6-Pro-RL/resolve/main/tokenizer.json',
     },
-    title: 'MiMo V2.5 Pro',
+    title: 'MiMo V2.6 Pro',
   },
   sdxl: {
     kind: 'clip-bpe',
@@ -135,12 +135,12 @@ export const models = {
   },
   step: {
     kind: 'huggingface',
-    openrouter: 'stepfun/step-3.7-flash',
+    openrouter: 'stepfun/step-5-preview',
     source: {
-      tokenizerConfigUrl: 'https://huggingface.co/stepfun-ai/Step-3.7-Flash/resolve/main/tokenizer_config.json',
-      tokenizerJsonUrl: 'https://huggingface.co/stepfun-ai/Step-3.7-Flash/resolve/main/tokenizer.json',
+      tokenizerConfigUrl: 'https://huggingface.co/stepfun-ai/Step-5-Preview/resolve/main/tokenizer_config.json',
+      tokenizerJsonUrl: 'https://huggingface.co/stepfun-ai/Step-5-Preview/resolve/main/tokenizer.json',
     },
-    title: 'Step 3.7 Flash',
+    title: 'Step 5 Preview',
   },
 } as const satisfies Record<ModelId, ModelDefinition>
 

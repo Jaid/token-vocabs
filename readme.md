@@ -4,17 +4,17 @@ Count tokens or inspect token IDs across several modern tokenizer families from 
 
 ## Supported models
 
-- GPT-5.6 Sol → `o200k_base`
+- GPT-6.1 Sol → `o200k_base`
 - Gemma 4 31B it
 - Qwen 3.8 27B
 - Kimi K3
-- DeepSeek V4 Pro 0813
-- MiMo V2.5 Pro
+- DeepSeek V4.1 Flash 1017
+- MiMo V2.6 Pro
 - Stable Diffusion XL
 - GLM 5.3
 - MiniMax M3
 - Hy4 Preview
-- Step 3.7 Flash
+- Step 5 Preview
 
 ## Highlights
 
