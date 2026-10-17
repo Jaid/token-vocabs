@@ -11,7 +11,7 @@ export const toPlainObject = (value: unknown): unknown => {
   }
   if (value instanceof Map) {
     const object = Object.create(null) as Record<string, unknown>
-    for (const [key, entryValue] of value.entries()) {
+    for (const [key, entryValue] of value) {
       if (typeof key !== 'string') {
         throw new TypeError(`Expected string structured-data key, got ${typeof key}.`)
       }

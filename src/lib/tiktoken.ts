@@ -1,3 +1,1 @@
-import {Tiktoken} from 'tiktoken'
-
-export {Tiktoken}
+export {Tiktoken} from 'tiktoken'

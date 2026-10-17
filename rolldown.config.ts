@@ -1,6 +1,6 @@
 import type {OutputOptions, RolldownOptions} from 'rolldown'
-import * as path from 'forward-slash-path'
 
+import * as path from 'forward-slash-path'
 import {defineConfig} from 'rolldown'
 import {wasm} from 'rolldown-plugin-wasm'
 

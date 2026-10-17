@@ -1,4 +1,5 @@
 import {expect, test} from 'bun:test'
+
 import * as path from 'forward-slash-path'
 
 const rootFolder = path.resolve(import.meta.dirname, '..')

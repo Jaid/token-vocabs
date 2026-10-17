@@ -31,7 +31,7 @@ const getErrorMessage = async (job: () => unknown) => {
   try {
     await job()
   } catch (error) {
-    return error instanceof Error ? error.message : String(error)
+    return Error.isError(error) ? error.message : String(error)
   }
   return ''
 }
@@ -110,7 +110,7 @@ test('reports correct byte offsets for Hugging Face byte-fallback tokens', async
   })
 })
 test('reports Hugging Face normalized input when it differs from the provided input', async () => {
-  const input = 'e\u0301 x'
+  const input = 'e\u{301} x'
   const processedInput = 'é x'
   expect(await tokenize(input, 'qwen')).toEqual({
     offsets: [2],

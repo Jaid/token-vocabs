@@ -1,4 +1,4 @@
-import {init, Tiktoken} from 'tiktoken/lite/init'
+import {init} from 'tiktoken/lite/init'
 import tiktokenWasmUrl from 'tiktoken/lite/tiktoken_bg.wasm?url'
 
 type TiktokenInitImports = Parameters<Parameters<typeof init>[0]>[0]
@@ -24,4 +24,4 @@ const initializeTiktoken = async () => {
 }
 await initializeTiktoken()
 
-export {Tiktoken}
+export {Tiktoken} from 'tiktoken/lite/init'

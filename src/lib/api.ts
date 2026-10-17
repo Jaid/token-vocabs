@@ -2,13 +2,13 @@ import type {ModelId} from './models.ts'
 import type {ModelSelection} from './modelSelection.ts'
 import type {RawTokenizeResult, TokenizeInput} from './tokenization.ts'
 
-import {freeModelAssets, loadModelAssets} from './data.ts'
-import {modelIds, models} from './models.ts'
-import {normalizeModelList} from './modelSelection.ts'
 import tinyhand from 'tinyhand'
+
+import {freeModelAssets, loadModelAssets} from './data.ts'
+import {normalizeModelList} from './modelSelection.ts'
 import {freeTokenizers, getTokenizer} from './tokenizers/index.ts'
 
-export type {ModelSelection} from './modelSelection.ts'
+export {type ModelId, modelIds, models} from './models.ts'
 
 export type CountResult = number
 export type CountTokensResult = CountResult
@@ -76,7 +76,8 @@ export const free = (modelId?: ModelId) => {
   freeTokenizers(modelId)
 }
 
-export {modelIds, models}
 export default tokenize
-export type {ModelId}
+
+export type {ModelSelection} from './modelSelection.ts'
+
 export type {RawTokenizeResult, TokenizeInput} from './tokenization.ts'

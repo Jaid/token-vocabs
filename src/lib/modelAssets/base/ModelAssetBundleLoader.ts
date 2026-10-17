@@ -22,7 +22,7 @@ const toModelAssetFiles = (value: unknown): ModelAssetFiles => {
     throw new TypeError('Expected a tokenizer asset bundle to unpack into a Map.')
   }
   const files = Object.create(null) as ModelAssetFiles
-  for (const [fileName, content] of value.entries()) {
+  for (const [fileName, content] of value) {
     if (typeof fileName !== 'string') {
       throw new TypeError(`Expected tokenizer asset file names to be strings, got ${typeof fileName}.`)
     }

@@ -41,11 +41,12 @@ const createByteEncoder = (): Array<string> => {
   const codePoints = [...bytes]
   let extraCodePoint = 256
   for (let byte = 0; byte < 256; byte++) {
-    if (!bytes.includes(byte)) {
-      bytes.push(byte)
-      codePoints.push(extraCodePoint)
-      extraCodePoint++
+    if (bytes.includes(byte)) {
+      continue
     }
+    bytes.push(byte)
+    codePoints.push(extraCodePoint)
+    extraCodePoint++
   }
   for (const [index, byte] of bytes.entries()) {
     byteEncoder[byte] = String.fromCodePoint(codePoints[index])
@@ -169,10 +170,11 @@ export class ClipTokenizer extends BaseTokenizer<ClipTokenizerState> {
       let bestPairRank = Number.POSITIVE_INFINITY
       for (let index = 0; index < word.length - 1; index++) {
         const rank = mergeRanks.get(`${word[index]} ${word[index + 1]}`)
-        if (rank !== undefined && rank < bestPairRank) {
-          bestPairRank = rank
-          bestPairIndex = index
+        if (!(rank !== undefined && rank < bestPairRank)) {
+          continue
         }
+        bestPairRank = rank
+        bestPairIndex = index
       }
       if (bestPairIndex < 0) {
         break
