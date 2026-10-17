@@ -3,9 +3,8 @@ type BrotliDecompressFunction = (buffer: Uint8Array, outputSize?: number) => Uin
 let polyfillPromise: Promise<BrotliDecompressFunction> | undefined
 const getBrotliPolyfill = () => {
   polyfillPromise ??= (async () => {
-    // @ts-expect-error TS7016 The brotli package exposes this browser-friendly entry as untyped CommonJS.
-    const module = await import('brotli/decompress.js') as {default: BrotliDecompressFunction}
-    return module.default
+    const module = await import('brotli/decompress')
+    return module.decompress
   })()
   return polyfillPromise
 }
