@@ -1,6 +1,6 @@
 {
   "name": "token-vocabs",
-  "version": "0.8.0",
+  "version": "1.0.0",
   "type": "module",
   "private": true,
   "description": "Count and inspect token IDs across several modern tokenizer families offline.",
